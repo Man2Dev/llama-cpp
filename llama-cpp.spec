@@ -52,7 +52,6 @@ BuildRequires:  curl
 BuildRequires:  libcurl-devel
 BuildRequires:  wget
 BuildRequires:  langpacks-en
-BuildRequires:  ccache
 BuildRequires:  gcc-c++
 %if %{with examples}
 BuildRequires:  python3-devel
