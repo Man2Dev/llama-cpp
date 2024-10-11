@@ -17,6 +17,8 @@
 %global build_test OFF
 %endif
 
+%bcond_with check
+
 Summary:        Port of Facebook's LLaMA model in C/C++
 Name:           llama-cpp
 
@@ -42,7 +44,22 @@ URL:            https://github.com/ggerganov/llama.cpp
 Source0:        %{url}/archive/%{version}.tar.gz#/llama.cpp-%{version}.tar.gz
 
 ExclusiveArch:  x86_64 aarch64
+
+%ifarch x86_64
+%bcond_without rocm
+%else
+%bcond_with rocm
+%endif
+
+%if %{with rocm}
+%global build_hip ON
+%global toolchain rocm
+# hipcc does not support some clang flags
+%global build_cxxflags %(echo %{optflags} | sed -e 's/-fstack-protector-strong/-Xarch_host -fstack-protector-strong/' -e 's/-fcf-protection/-Xarch_host -fcf-protection/')
+%else
+%global build_hip OFF
 %global toolchain gcc
+%endif
 
 BuildRequires:  cmake
 BuildRequires:  sed
@@ -60,6 +77,15 @@ BuildRequires:  python3dist(poetry)
 
 Requires:       cmake-filesystem
 Recommends:	numactl
+%endif
+
+%if %{with rocm}
+BuildRequires:  hipblas-devel
+BuildRequires:  rocm-comgr-devel
+BuildRequires:  rocm-hip-devel
+BuildRequires:  rocm-runtime-devel
+BuildRequires:  rocm-rpm-macros
+BuildRequires:  rocm-rpm-macros-modules
 %endif
 
 %description
@@ -115,6 +141,9 @@ Requires:       %{name}%{?_isa} = %{version}-%{release}
 %package examples
 Summary:        Examples for %{name}
 Requires:       %{name}%{?_isa} = %{version}-%{release}
+Requires:       python3dist(numpy)
+Requires:       python3dist(torch)
+Requires:       python3dist(sentencepiece)
 
 %description examples
 %{summary}
@@ -139,6 +168,10 @@ cd %{_vpath_srcdir}/gguf-py
 cd -
 %endif
 
+%if %{with rocm}
+module load rocm/default
+%endif
+
 %cmake \
     -DCMAKE_INSTALL_LIBDIR=%{_lib} \
     -DCMAKE_SKIP_RPATH=ON \
@@ -149,10 +182,19 @@ cd -
     -DLLAMA_AVX512_VNNI=OFF \
     -DLLAMA_FMA=OFF \
     -DLLAMA_F16C=OFF \
+    -DLLAMA_HIPBLAS=%{build_hip} \
+%if %{with rocm}
+    -DAMDGPU_TARGETS=${ROCM_GPUS} \
+%endif
     -DLLAMA_BUILD_EXAMPLES=%{build_examples} \
     -DLLAMA_BUILD_TESTS=%{build_test}
     
 %cmake_build
+
+%if %{with rocm}
+module purge
+%endif
+
 
 %install
 %if %{with examples}
@@ -176,8 +218,10 @@ rm %{buildroot}%{_bindir}/convert*.py
 %endif
 
 %if %{with test}
+%if %{with check}
 %check
 %ctest
+%endif
 %endif
 
 %files
