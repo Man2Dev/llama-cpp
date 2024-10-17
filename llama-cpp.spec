@@ -174,6 +174,8 @@ module load rocm/default
 
 %cmake \
     -DCMAKE_INSTALL_LIBDIR=%{_lib} \
+    -DCMAKE_INSTALL_BIBDIR=%{_bin} \
+    -DCMAKE_INSTALL_BIBDIR=%{_includedir} \
     -DCMAKE_SKIP_RPATH=ON \
     -DLLAMA_AVX=OFF \
     -DLLAMA_AVX2=OFF \
