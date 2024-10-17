@@ -172,7 +172,6 @@ module load rocm/default
 %endif
 
 %cmake \
-    -DLLAMA_FATAL_WARNINGS=ON \
     -DCMAKE_INSTALL_LIBDIR=%{_lib} \
     -DCMAKE_SKIP_RPATH=ON \
     -DLLAMA_AVX=OFF \
