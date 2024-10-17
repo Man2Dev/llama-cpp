@@ -68,6 +68,7 @@ BuildRequires:  curl
 BuildRequires:  libcurl-devel
 BuildRequires:  gcc-c++
 BuildRequires:	openmpi
+BuildRequires:	pthreadpool-devel
 %if %{with examples}
 BuildRequires:  python3-devel
 BuildRequires:  python3dist(pip)
