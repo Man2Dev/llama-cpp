@@ -62,21 +62,16 @@ ExclusiveArch:  x86_64 aarch64
 %endif
 
 BuildRequires:  cmake
-BuildRequires:  sed
-BuildRequires:  git
 BuildRequires:  xxd
+BuildRequires:  wget
 BuildRequires:  curl
 BuildRequires:  libcurl-devel
-BuildRequires:  wget
-BuildRequires:  langpacks-en
 BuildRequires:  gcc-c++
+BuildRequires:	openmpi
 %if %{with examples}
 BuildRequires:  python3-devel
 BuildRequires:  python3dist(pip)
 BuildRequires:  python3dist(poetry)
-
-Requires:       cmake-filesystem
-Recommends:	numactl
 %endif
 
 %if %{with rocm}
@@ -87,6 +82,9 @@ BuildRequires:  rocm-runtime-devel
 BuildRequires:  rocm-rpm-macros
 BuildRequires:  rocm-rpm-macros-modules
 %endif
+
+Requires:	curl
+Recommends:	numactl
 
 %description
 The main goal of llama.cpp is to run the LLaMA model using 4-bit
@@ -173,6 +171,7 @@ module load rocm/default
 %endif
 
 %cmake \
+    -DLLAMA_FATAL_WARNINGS=ON \
     -DCMAKE_INSTALL_LIBDIR=%{_lib} \
     -DCMAKE_SKIP_RPATH=ON \
     -DLLAMA_AVX=OFF \
@@ -182,8 +181,9 @@ module load rocm/default
     -DLLAMA_AVX512_VNNI=OFF \
     -DLLAMA_FMA=OFF \
     -DLLAMA_F16C=OFF \
-    -DLLAMA_HIPBLAS=%{build_hip} \
+    -DLLAMA_CURL=OFF \
 %if %{with rocm}
+    -DLLAMA_HIPBLAS=%{build_hip} \
     -DAMDGPU_TARGETS=${ROCM_GPUS} \
 %endif
     -DLLAMA_BUILD_EXAMPLES=%{build_examples} \
