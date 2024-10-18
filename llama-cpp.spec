@@ -61,10 +61,13 @@ ExclusiveArch:  x86_64 aarch64
 %global toolchain gcc
 %endif
 
-BuildRequires:  cmake
 BuildRequires:  xxd
-BuildRequires:  wget
+BuildRequires:  git
+BuildRequires:  cmake
 BuildRequires:  curl
+BuildRequires:  wget
+BuildRequires:  langpacks-en
+# above are packages in .github/workflows/server.yml
 BuildRequires:  libcurl-devel
 BuildRequires:  gcc-c++
 BuildRequires:	openmpi
