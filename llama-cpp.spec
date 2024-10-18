@@ -184,7 +184,6 @@ module load rocm/default
     -DLLAMA_AVX512_VNNI=OFF \
     -DLLAMA_FMA=OFF \
     -DLLAMA_F16C=OFF \
-    -DLLAMA_CURL=OFF \
 %if %{with rocm}
     -DLLAMA_HIPBLAS=%{build_hip} \
     -DAMDGPU_TARGETS=${ROCM_GPUS} \
