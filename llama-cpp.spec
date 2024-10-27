@@ -71,14 +71,16 @@ BuildRequires:  langpacks-en
 BuildRequires:  libcurl-devel
 BuildRequires:  gcc-c++
 BuildRequires:  openmpi
+%if 0%{?fedora} >= 40
 BuildRequires:  pthreadpool-devel
+%endif
 %if %{with examples}
 BuildRequires:  python3-devel
 BuildRequires:  python3dist(pip)
 BuildRequires:  python3dist(poetry)
 %endif
 
-%if %{with rocm}
+%if 0%{with rocm} && 0%{?fedora} >= 40
 BuildRequires:  hipblas-devel
 BuildRequires:  rocm-comgr-devel
 BuildRequires:  rocm-hip-devel
