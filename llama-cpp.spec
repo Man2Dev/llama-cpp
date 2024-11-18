@@ -19,9 +19,6 @@
 
 %bcond_with check
 
-Summary:        Port of Facebook's LLaMA model in C/C++
-Name:           llama-cpp
-
 # Licensecheck reports
 #
 # *No copyright* The Unlicense
@@ -36,6 +33,10 @@ Name:           llama-cpp
 # ...
 # This is the main license
 
+
+Summary:	LLM inference in C/C++
+Name:		llama-cpp
+Epoch:		1
 License:        MIT AND Apache-2.0 AND LicenseRef-Fedora-Public-Domain
 Version:        b3837
 Release:        %autorelease
@@ -97,49 +98,26 @@ Requires:	hipblas
 Requires:       curl
 Recommends:     numactl
 
-%description
-The main goal of llama.cpp is to run the LLaMA model using 4-bit
-integer quantization on a MacBook
+%global _description %{expand:
+The main goal of llama.cpp is to enable LLM inference with minimal setup and state-of-the-art performance on a wide variety of hardware - locally and in the cloud.
 
-* Plain C/C++ implementation without dependencies
-* Apple silicon first-class citizen - optimized via ARM NEON, Accelerate
-  and Metal frameworks
-* AVX, AVX2 and AVX512 support for x86 architectures
-* Mixed F16 / F32 precision
-* 2-bit, 3-bit, 4-bit, 5-bit, 6-bit and 8-bit integer quantization support
-* CUDA, Metal and OpenCL GPU backend support
-
-The original implementation of llama.cpp was hacked in an evening.
-Since then, the project has improved significantly thanks to many
-contributions. This project is mainly for educational purposes and
-serves as the main playground for developing new features for the
-ggml library.
+* Plain C/C++ implementation without any dependencies
+* Apple silicon is a first-class citizen - optimized via ARM NEON, Accelerate and Metal frameworks
+* AVX, AVX2, AVX512 and AMX support for x86 architectures
+* 1.5-bit, 2-bit, 3-bit, 4-bit, 5-bit, 6-bit, and 8-bit integer quantization for faster inference and reduced memory use
+* Custom CUDA kernels for running LLMs on NVIDIA GPUs (support for AMD GPUs via HIP and Moore Threads MTT GPUs via MUSA)
+* Vulkan and SYCL backend support
+* CPU+GPU hybrid inference to partially accelerate models larger than the total VRAM capacity}
 
 %package devel
-Summary:        Port of Facebook's LLaMA model in C/C++
+Summary:        %{summary}.
 Requires:       %{name}%{?_isa} = %{version}-%{release}
 
 %description devel
-The main goal of llama.cpp is to run the LLaMA model using 4-bit
-integer quantization on a MacBook
-
-* Plain C/C++ implementation without dependencies
-* Apple silicon first-class citizen - optimized via ARM NEON, Accelerate
-  and Metal frameworks
-* AVX, AVX2 and AVX512 support for x86 architectures
-* Mixed F16 / F32 precision
-* 2-bit, 3-bit, 4-bit, 5-bit, 6-bit and 8-bit integer quantization support
-* CUDA, Metal and OpenCL GPU backend support
-
-The original implementation of llama.cpp was hacked in an evening.
-Since then, the project has improved significantly thanks to many
-contributions. This project is mainly for educational purposes and
-serves as the main playground for developing new features for the
-ggml library.
 
 %if %{with test}
 %package test
-Summary:        Tests for %{name}
+Summary:        Tests for %{name} - %{summary}.
 Requires:       %{name}%{?_isa} = %{version}-%{release}
 
 %description test
@@ -148,7 +126,7 @@ Requires:       %{name}%{?_isa} = %{version}-%{release}
 
 %if %{with examples}
 %package examples
-Summary:        Examples for %{name}
+Summary:        Examples for %{name} - %{summary}.
 Requires:       %{name}%{?_isa} = %{version}-%{release}
 Requires:       python3dist(numpy)
 Requires:       python3dist(torch)
@@ -159,6 +137,7 @@ Requires:       python3dist(sentencepiece)
 %endif
 
 %prep
+%autosetup -S git
 %autosetup -p1 -n llama.cpp-%{version}
 
 # verson the *.so
