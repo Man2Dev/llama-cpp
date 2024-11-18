@@ -3,7 +3,7 @@
 %global pypi_version 0.10.0
 
 # Some optional subpackages
-%bcond_with examples
+%bcond_without examples
 %if %{with examples}
 %global build_examples ON
 %else
@@ -17,10 +17,17 @@
 %global build_test OFF
 %endif
 
-%bcond_with check
+# remove documentation files
+%bcond_without doc
 
-Summary:        Port of Facebook's LLaMA model in C/C++
-Name:           llama-cpp
+# don't add ssl support to llama-server
+%bcond_without openssl
+
+# OpenSSL ENGINE support
+# This is deprecated by OpenSSL since OpenSSL 3.0 and by Fedora since Fedora 41
+# https://fedoraproject.org/wiki/Changes/OpensslDeprecateEngine
+# Change the bcond to 0 to turn off ENGINE support by default
+%bcond openssl_engine_support %[%{defined fedora} || 0%{?rhel} < 10]
 
 # Licensecheck reports
 #
@@ -36,14 +43,16 @@ Name:           llama-cpp
 # ...
 # This is the main license
 
+
+Summary:	LLM inference in C/C++
+Name:		llama-cpp
+Epoch:		1
 License:        MIT AND Apache-2.0 AND LicenseRef-Fedora-Public-Domain
-Version:        b3837
+Version:        b4206
 Release:        %autorelease
 
 URL:            https://github.com/ggerganov/llama.cpp
 Source0:        %{url}/archive/%{version}.tar.gz#/llama.cpp-%{version}.tar.gz
-
-ExclusiveArch:  x86_64 aarch64
 
 %ifarch x86_64
 %bcond_without rocm
@@ -64,15 +73,27 @@ ExclusiveArch:  x86_64 aarch64
 BuildRequires:  xxd
 BuildRequires:  git
 BuildRequires:  cmake
-BuildRequires:  curl
 BuildRequires:  wget
 BuildRequires:  langpacks-en
-# above are packages in .github/workflows/server.yml
+BuildRequires:  curl
+BuildRequires:  pkgconfig(libcurl)
 BuildRequires:  libcurl-devel
+# above are packages in .github/workflows/server.yml
 BuildRequires:  gcc-c++
 BuildRequires:  openmpi
+%if %{with openssl}
+# https://github.com/ggerganov/llama.cpp/blob/master/examples/server/README.md#build-with-ssl
+BuildRequires:	openssl-devel
+BuildRequires:	pkgconfig(libcrypto)
+BuildRequires:	pkgconfig(libssl)
+BuildRequires:	pkgconfig(openssl)
+%if %{with openssl_engine_support} && 0%{?fedora} >= 41
+BuildRequires:	openssl-devel-engine
+%endif
+%endif
 %if 0%{?fedora} >= 40
 BuildRequires:  pthreadpool-devel
+BuildRequires:  pkgconfig(pthread-stubs)
 %endif
 %if %{with examples}
 BuildRequires:  python3-devel
@@ -95,78 +116,87 @@ Requires:	hipblas
 %endif
 
 Requires:       curl
+Requires:       pkgconfig(libcurl)
+Requires:       pkgconfig(pthread-stubs)
 Recommends:     numactl
 
-%description
-The main goal of llama.cpp is to run the LLaMA model using 4-bit
-integer quantization on a MacBook
 
-* Plain C/C++ implementation without dependencies
-* Apple silicon first-class citizen - optimized via ARM NEON, Accelerate
-  and Metal frameworks
-* AVX, AVX2 and AVX512 support for x86 architectures
-* Mixed F16 / F32 precision
-* 2-bit, 3-bit, 4-bit, 5-bit, 6-bit and 8-bit integer quantization support
-* CUDA, Metal and OpenCL GPU backend support
+%global summary %{expand:
+LLM inference in C/C++}
 
-The original implementation of llama.cpp was hacked in an evening.
-Since then, the project has improved significantly thanks to many
-contributions. This project is mainly for educational purposes and
-serves as the main playground for developing new features for the
-ggml library.
+%global common_description %{expand:
+The main goal of llama.cpp is to enable LLM inference with minimal setup and state-of-the-art performance on a wide variety of hardware - locally and in the cloud.
 
-%package devel
-Summary:        Port of Facebook's LLaMA model in C/C++
+* Plain C/C++ implementation without any dependencies
+* Apple silicon is a first-class citizen - optimized via ARM NEON, Accelerate and Metal frameworks
+* AVX, AVX2, AVX512 and AMX support for x86 architectures
+* 1.5-bit, 2-bit, 3-bit, 4-bit, 5-bit, 6-bit, and 8-bit integer quantization for faster inference and reduced memory use
+* Custom CUDA kernels for running LLMs on NVIDIA GPUs (support for AMD GPUs via HIP and Moore Threads MTT GPUs via MUSA)
+* Vulkan and SYCL backend support
+* CPU+GPU hybrid inference to partially accelerate models larger than the total VRAM capacity}
+
+%package	all
+Summary:        Meta-package to pull in all %{name} tools
+BuildArch:	x86_64 aarch64
 Requires:       %{name}%{?_isa} = %{version}-%{release}
+%description    -n all %{common_description}
+#%%if %{with openssl}
 
-%description devel
-The main goal of llama.cpp is to run the LLaMA model using 4-bit
-integer quantization on a MacBook
+# get all docs files with
+# find . -name '*.md'
+%package	doc
+Summary:        Documentation files for %{name}
+BuildArch:      noarch
+%description	-n doc
+Documentation files for %{name} package
 
-* Plain C/C++ implementation without dependencies
-* Apple silicon first-class citizen - optimized via ARM NEON, Accelerate
-  and Metal frameworks
-* AVX, AVX2 and AVX512 support for x86 architectures
-* Mixed F16 / F32 precision
-* 2-bit, 3-bit, 4-bit, 5-bit, 6-bit and 8-bit integer quantization support
-* CUDA, Metal and OpenCL GPU backend support
+%package	devel
+Summary:        devel for %{summary}
+BuildArch:	x86_64 aarch64
+Requires:       %{name}%{?_isa} = %{version}-%{release}
+%description	-n devel %{common_description}
 
-The original implementation of llama.cpp was hacked in an evening.
-Since then, the project has improved significantly thanks to many
-contributions. This project is mainly for educational purposes and
-serves as the main playground for developing new features for the
-ggml library.
+%package        rocm
+Summary:        %{summary} with rocm
+BuildArch:	x86_64
+Requires:       %{name}%{?_isa} = %{version}-%{release}
+%description    -n rocm %{common_description}
 
 %if %{with test}
 %package test
-Summary:        Tests for %{name}
+Summary:        Tests for %{summary}
+BuildArch:	x86_64 aarch64
 Requires:       %{name}%{?_isa} = %{version}-%{release}
-
-%description test
-%{summary}
+%description	-n tests %{common_description}
 %endif
 
 %if %{with examples}
 %package examples
-Summary:        Examples for %{name}
+Summary:        Examples for %{name} - %{summary}
 Requires:       %{name}%{?_isa} = %{version}-%{release}
 Requires:       python3dist(numpy)
 Requires:       python3dist(torch)
 Requires:       python3dist(sentencepiece)
-
-%description examples
-%{summary}
+%description	-n examples %{common_description}
 %endif
 
 %prep
+%autosetup -S git
 %autosetup -p1 -n llama.cpp-%{version}
 
 # verson the *.so
 sed -i -e 's/POSITION_INDEPENDENT_CODE ON/POSITION_INDEPENDENT_CODE ON SOVERSION %{version}/' src/CMakeLists.txt
 sed -i -e 's/POSITION_INDEPENDENT_CODE ON/POSITION_INDEPENDENT_CODE ON SOVERSION %{version}/' ggml/src/CMakeLists.txt
+sed -i -e 's/POSITION_INDEPENDENT_CODE ON/POSITION_INDEPENDENT_CODE ON SOVERSION %{version}/' cmake/llama-config.cmake.in
+sed -i -e 's/POSITION_INDEPENDENT_CODE ON/POSITION_INDEPENDENT_CODE ON SOVERSION %{version}/' common/CMakeLists.txt
+sed -i -e 's/POSITION_INDEPENDENT_CODE ON/POSITION_INDEPENDENT_CODE ON SOVERSION %{version}/' examples/llava/CMakeLists.txt
 
 # no android needed
 rm -rf exmples/llma.android
+# remove documentation
+%if %{without doc}
+find . -name '*.md' -exec rm -rf {} \;
+%endif
 # git cruft
 find . -name '.gitignore' -exec rm -rf {} \;
 
@@ -183,16 +213,9 @@ module load rocm/default
 
 %cmake \
     -DCMAKE_INSTALL_LIBDIR=%{_lib} \
-    -DCMAKE_INSTALL_BIBDIR=%{_bin} \
+    -DCMAKE_INSTALL_BIBDIR=%{_bindir} \
     -DCMAKE_INSTALL_BIBDIR=%{_includedir} \
     -DCMAKE_SKIP_RPATH=ON \
-    -DLLAMA_AVX=OFF \
-    -DLLAMA_AVX2=OFF \
-    -DLLAMA_AVX512=OFF \
-    -DLLAMA_AVX512_VBMI=OFF \
-    -DLLAMA_AVX512_VNNI=OFF \
-    -DLLAMA_FMA=OFF \
-    -DLLAMA_F16C=OFF \
 %if %{with rocm}
     -DLLAMA_HIPBLAS=%{build_hip} \
     -DAMDGPU_TARGETS=${ROCM_GPUS} \
@@ -216,7 +239,7 @@ cd -
 
 %cmake_install
 
-rm -rf %{buildroot}%{_libdir}/libggml_shared.*
+## rm -rf %{buildroot}%{_libdir}/libggml_shared.*
 
 %if %{with examples}
 mkdir -p %{buildroot}%{_datarootdir}/%{name}
