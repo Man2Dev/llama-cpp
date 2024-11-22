@@ -1,0 +1,17 @@
+summary: Run upstream tests of llama-cpp
+discover:
+  how: shell
+  dist-git-source: true
+  tests:
+  - name: /upstream/list-dir
+    test: ls -lha $TMT_SOURCE_DIR/
+  - name: /upstream/suite
+    test: cd $TMT_SOURCE_DIR/llama.cpp-b3837 && make test
+prepare:
+- name: packages
+  how: install
+  package:
+  - make
+  - gcc-c++
+execute:
+  how: tmt
