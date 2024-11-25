@@ -37,7 +37,7 @@ Name:           llama-cpp
 # This is the main license
 
 License:        MIT AND Apache-2.0 AND LicenseRef-Fedora-Public-Domain
-Version:        b3837
+Version:        b4094
 Release:        %autorelease
 
 URL:            https://github.com/ggerganov/llama.cpp
@@ -237,6 +237,7 @@ rm %{buildroot}%{_bindir}/convert*.py
 %license LICENSE
 %{_libdir}/libllama.so.%{version}
 %{_libdir}/libggml.so.%{version}
+%{_libdir}/libggml-base.so.%{version}
 
 %files devel
 %dir %{_libdir}/cmake/llama
@@ -246,6 +247,8 @@ rm %{buildroot}%{_bindir}/convert*.py
 %{_includedir}/llama.h
 %{_libdir}/libllama.so
 %{_libdir}/libggml.so
+%{_libdir}/libggml-base.so
+%{_libdir}/libggml-cpu.so
 %{_libdir}/cmake/llama/*.cmake
 %{_exec_prefix}/lib/pkgconfig/llama.pc
 
