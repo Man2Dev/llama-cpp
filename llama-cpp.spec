@@ -190,7 +190,7 @@ module load rocm/default
     -DGGML_FMA=OFF \
     -DGGML_F16C=OFF \
 %if %{with rocm}
-    -DLLAMA_HIPBLAS=%{build_hip} \
+    -DGGML_HIP=%{build_hip} \
     -DAMDGPU_TARGETS=${ROCM_GPUS} \
 %endif
     -DLLAMA_BUILD_EXAMPLES=%{build_examples} \
@@ -247,6 +247,9 @@ rm %{buildroot}%{_bindir}/convert*.py
 %{_libdir}/libggml.so
 %{_libdir}/libggml-base.so
 %{_libdir}/libggml-cpu.so
+%if %{with rocm}
+%{_libdir}/libggml-hip.so
+%endif
 %{_libdir}/cmake/llama/*.cmake
 %{_exec_prefix}/lib/pkgconfig/llama.pc
 
