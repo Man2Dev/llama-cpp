@@ -88,8 +88,8 @@ BuildRequires:  rocm-runtime-devel
 BuildRequires:  rocm-rpm-macros
 BuildRequires:  rocm-rpm-macros-modules
 
-Requires:	rocblas
-Requires:	hipblas
+Requires:       rocblas
+Requires:       hipblas
 %endif
 
 Requires:       curl
