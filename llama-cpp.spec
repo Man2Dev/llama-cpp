@@ -75,6 +75,11 @@ BuildRequires:  git
 BuildRequires:  cmake
 BuildRequires:  wget
 BuildRequires:  langpacks-en
+# glibc-all-langpacks and glibc-langpack-is are needed for GETTEXT_LOCALE and
+# GETTEXT_ISO_LOCALE test prereq's, glibc-langpack-en ensures en_US.UTF-8.
+BuildRequires:  glibc-all-langpacks
+BuildRequires:  glibc-langpack-en
+BuildRequires:  glibc-langpack-is
 BuildRequires:  curl
 BuildRequires:  pkgconfig(libcurl)
 BuildRequires:  libcurl-devel
@@ -135,7 +140,47 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 * Vulkan and SYCL backend support
 * CPU+GPU hybrid inference to partially accelerate models larger than the total VRAM capacity}
 
-%package	all
+Provides:       bundled(llama-batched)
+Provides:       bundled(llama-batched-bench)
+Provides:       bundled(llama-bench)
+Provides:       bundled(llama-cli)
+Provides:       bundled(llama-convert-llama2c-to-ggml)
+Provides:       bundled(llama-embedding)
+Provides:       bundled(llama-eval-callback)
+Provides:       bundled(llama-export-lora)
+Provides:       bundled(llama-gbnf-validator)
+Provides:       bundled(llama-gguf)
+Provides:       bundled(llama-gguf-hash)
+Provides:       bundled(llama-gguf-split)
+Provides:       bundled(llama-gritlm)
+Provides:       bundled(llama-imatrix)
+Provides:       bundled(llama-infill)
+Provides:       bundled(llama-llava-cli)
+Provides:       bundled(llama-minicpmv-cli)
+Provides:       bundled(llama-lookahead)
+Provides:       bundled(llama-lookup)
+Provides:       bundled(llama-lookup-create)
+Provides:       bundled(llama-lookup-merge)
+Provides:       bundled(llama-lookup-stats)
+Provides:       bundled(llama-parallel)
+Provides:       bundled(llama-passkey)
+Provides:       bundled(llama-perplexity)
+Provides:       bundled(llama-q8dot)
+Provides:       bundled(llama-quantize)
+Provides:       bundled(llama-quantize-stats)
+Provides:       bundled(llama-retrieval)
+Provides:       bundled(llama-save-load-state)
+Provides:       bundled(llama-server)
+Provides:       bundled(llama-simple)
+Provides:       bundled(llama-simple-chat)
+Provides:       bundled(llama-run)
+Provides:       bundled(llama-speculative)
+Provides:       bundled(llama-tokenize)
+Provides:       bundled(llama-vdot)
+Provides:       bundled(llama-cvector-generator)
+Provides:       bundled(llama-gen-docs)
+
+%package	llama-cpp
 Summary:        Meta-package to pull in all %{name} tools
 BuildArch:	x86_64 aarch64
 Requires:       %{name}%{?_isa} = %{version}-%{release}
@@ -201,6 +246,10 @@ find . -name '*.md' -exec rm -rf {} \;
 find . -name '.gitignore' -exec rm -rf {} \;
 
 %build
+# Improve build reproducibility
+export TZ=UTC
+export SOURCE_DATE_EPOCH=$(date -r version +%%s 2>/dev/null)
+
 %if %{with examples}
 cd %{_vpath_srcdir}/gguf-py
 %pyproject_wheel
