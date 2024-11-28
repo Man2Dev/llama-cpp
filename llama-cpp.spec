@@ -62,7 +62,6 @@ ExclusiveArch:  x86_64 aarch64
 %endif
 
 BuildRequires:  xxd
-BuildRequires:  git
 BuildRequires:  cmake
 BuildRequires:  curl
 BuildRequires:  wget
