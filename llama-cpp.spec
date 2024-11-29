@@ -1,21 +1,3 @@
-# For the extra python package gguf that comes with llama-cpp
-%global pypi_name gguf
-%global pypi_version 0.10.0
-
-%global summary %{expand:
-LLM inference in C/C++}
-
-%global common_description %{expand:
-The main goal of llama.cpp is to enable LLM inference with minimal setup and state-of-the-art performance on a wide variety of hardware - locally and in the cloud.
-
-* Plain C/C++ implementation without any dependencies
-* Apple silicon is a first-class citizen - optimized via ARM NEON, Accelerate and Metal frameworks
-* AVX, AVX2, AVX512 and AMX support for x86 architectures
-* 1.5-bit, 2-bit, 3-bit, 4-bit, 5-bit, 6-bit, and 8-bit integer quantization for faster inference and reduced memory use
-* Custom CUDA kernels for running LLMs on NVIDIA GPUs (support for AMD GPUs via HIP and Moore Threads MTT GPUs via MUSA)
-* Vulkan and SYCL backend support
-* CPU+GPU hybrid inference to partially accelerate models larger than the total VRAM capacity}
-
 # Licensecheck reports
 #
 # *No copyright* The Unlicense
@@ -30,9 +12,21 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 # ...
 # This is the main license
 
+%global summary LLM inference in C/C++
+
+%global _description %{expand:
+The main goal of llama.cpp is to enable LLM inference with minimal setup and state-of-the-art performance on a wide variety of hardware - locally and in the cloud.
+
+* Plain C/C++ implementation without any dependencies
+* Apple silicon is a first-class citizen - optimized via ARM NEON, Accelerate and Metal frameworks
+* AVX, AVX2, AVX512 and AMX support for x86 architectures
+* 1.5-bit, 2-bit, 3-bit, 4-bit, 5-bit, 6-bit, and 8-bit integer quantization for faster inference and reduced memory use
+* Custom CUDA kernels for running LLMs on NVIDIA GPUs (support for AMD GPUs via HIP and Moore Threads MTT GPUs via MUSA)
+* Vulkan and SYCL backend support
+* CPU+GPU hybrid inference to partially accelerate models larger than the total VRAM capacity}
+
 Summary:	LLM inference in C/C++
 Name:		llama-cpp
-Epoch:		1
 License:        MIT AND Apache-2.0 AND LicenseRef-Fedora-Public-Domain
 Version:        b4206
 ExclusiveArch:  x86_64 aarch64
@@ -43,20 +37,30 @@ Provides:       llama-cpp-full = %{version}-%{release}
 
 # Build Required packages
 BuildRequires:  xxd
-BuildRequires:  git
 BuildRequires:  cmake
 BuildRequires:  wget
 BuildRequires:  langpacks-en
+# glibc packages added just in case
 # glibc-all-langpacks and glibc-langpack-is are needed for GETTEXT_LOCALE and
 # GETTEXT_ISO_LOCALE test prereq's, glibc-langpack-en ensures en_US.UTF-8.
 BuildRequires:  glibc-all-langpacks
 BuildRequires:  glibc-langpack-en
 BuildRequires:  glibc-langpack-is
-BuildRequires:  curl
+BuildRequires:  glibc-all-langpacks
+# packages found in .github/workflows/server.yml
 BuildRequires:  pkgconfig(libcurl)
 BuildRequires:  libcurl-devel
-# above are packages in .github/workflows/server.yml
+# packages that either are or possibly needed
 BuildRequires:  gcc-c++
+BuildRequires:  make
+BuildRequires:  clang
+BuildRequires:  gcc
+BuildRequires:  glib
+BuildRequires:  glib-devel
+BuildRequires:  glibc
+BuildRequires:  glibc-devel
+
+# hardware acceleration / optimization packages
 BuildRequires:  openmpi
 BuildRequires:  pthreadpool-devel
 BuildRequires:  pkgconfig(pthread-stubs)
@@ -110,12 +114,24 @@ Recommends:     numactl
 #Provides:       bundled(llama-cvector-generator)
 #Provides:       bundled(llama-gen-docs)
 
-%description
-LLM inference in C/C++
+%description %_description
 
+# ---------------------------------------------------------------------------
+%package -n llama-cpp-all
+Summary:	%{summary} with openmp and curl without ssl
+
+%description -n llama-cpp-all %_description
+# ----------------------------------------------------------------------------
+
+
+# -----------------------------------------------------------------------------
+# prep
+# -----------------------------------------------------------------------------
 %prep
-%autosetup -S git
 %autosetup -p1 -n llama.cpp-%{version}
+
+# verson the *.so
+find . -iname "CMakeLists.*" -exec sed -i 's|POSITION_INDEPENDENT_CODE ON|POSITION_INDEPENDENT_CODE ON SOVERSION %{version}|' '{}' \;
 
 # no android needed
 rm -rf exmples/llma.android
@@ -124,33 +140,46 @@ find . -name '*.md' -exec rm -rf {} \;
 # git cruft
 find . -name '.gitignore' -exec rm -rf {} \;
 
+# -----------------------------------------------------------------------------
+# build
+# -----------------------------------------------------------------------------
 %build
-# Improve build reproducibility
-export TZ=UTC
-export SOURCE_DATE_EPOCH=$(date -r version +%%s 2>/dev/null)
-
+# https://github.com/ggerganov/llama.cpp/pull/10627
+# -DOAI_FULL_COMPAT
 %cmake \
-    -DCMAKE_INSTALL_LIBDIR=%{_lib} \
-    -DCMAKE_INSTALL_BIBDIR=%{_bindir} \
-    -DCMAKE_INSTALL_BIBDIR=%{_includedir} \
-    -DCMAKE_SKIP_RPATH=ON
- 
+	-DCMAKE_INSTALL_BINDIR=%{_bindir} \
+	-DCMAKE_INSTALL_LIBDIR=%{_libdir} \
+	-DINCLUDE_INSTALL_DIR=%{_includedir} \
+	-DLIB_INSTALL_DIR=%{_libdir} \
+	-DSHARE_INSTALL_PREFIX=%{_datadir} \
+	-DSYSCONF_INSTALL_DIR=%{_sysconfdir} \
+	-DBUILD_SHARED_LIBS=ON \
+%if "%{_lib}" == "lib64"
+        -DLIB_SUFFIX=64
+%else
+        -DLIB_SUFFIX=""
+%endif
 %cmake_build --config Release
 
+# -----------------------------------------------------------------------------
+# Install
+# -----------------------------------------------------------------------------
 %install
 %cmake_install
 
-## rm -rf %{buildroot}%{_libdir}/libggml_shared.*
-
+# -----------------------------------------------------------------------------
+# Verify
+# -----------------------------------------------------------------------------
 %if %{with check}
 %check
 %ctest
 %endif
 
+# -----------------------------------------------------------------------------
+# Files
+# -----------------------------------------------------------------------------
 %files
 %license LICENSE
-%{_libdir}/libllama.so.%{version}
-%{_libdir}/libggml.so.%{version}
 
 %changelog
 %autochangelog
