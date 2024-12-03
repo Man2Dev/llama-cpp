@@ -28,13 +28,13 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 Summary:	LLM inference in C/C++
 Name:		llama-cpp
 License:        MIT AND Apache-2.0 AND LicenseRef-Fedora-Public-Domain
+Epoch:		1
 Version:        b4206
 ExclusiveArch:  x86_64 aarch64
 Release:        %autorelease
 URL:            https://github.com/ggerganov/llama.cpp
 Source0:        %{url}/archive/%{version}.tar.gz#/llama.cpp-%{version}.tar.gz
 Provides:       llama-cpp-full = %{version}-%{release}
-%description	%_description
 
 # Build Required packages
 BuildRequires:  xxd
@@ -74,6 +74,7 @@ Requires:       pkgconfig(pthread-stubs)
 # optional
 Recommends:     numactl
 
+%description %_description
 # -----------------------------------------------------------------------------
 # sub packages
 # -----------------------------------------------------------------------------
@@ -210,14 +211,17 @@ find . -name '.gitignore' -exec rm -rf {} \;
 %{_libdir}/cmake/llama/llama-config.cmake
 %{_libdir}/cmake/llama/llama-version.cmake
 %{_libdir}/libggml-amx.so
+%{_libdir}/libggml-amx.so.%{version}
 %{_libdir}/libggml-base.so
-%{_libdir}/libggml-base.so.b4206
+%{_libdir}/libggml-base.so.%{version}
 %{_libdir}/libggml-cpu.so
+%{_libdir}/libggml-cpu.so.%{version}
 %{_libdir}/libggml.so
-%{_libdir}/libggml.so.b4206
+%{_libdir}/libggml.so.%{version}
 %{_libdir}/libllama.so
-%{_libdir}/libllama.so.b4206
+%{_libdir}/libllama.so.%{version}
 %{_libdir}/libllava_shared.so
+%{_libdir}/libllava_shared.so.%{version}
 %{_prefix}/lib/pkgconfig/llama.pc
 
 %changelog
