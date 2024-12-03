@@ -262,6 +262,7 @@ find . -name '.gitignore' -exec rm -rf {} \;
 %{_libdir}/libllama.so
 %{_libdir}/libllama.so.b4206
 %{_libdir}/libllava_shared.so
+%{_prefix}/lib/pkgconfig/llama.pc
 
 %changelog
 %autochangelog
