@@ -34,6 +34,7 @@ Release:        %autorelease
 URL:            https://github.com/ggerganov/llama.cpp
 Source0:        %{url}/archive/%{version}.tar.gz#/llama.cpp-%{version}.tar.gz
 Provides:       llama-cpp-full = %{version}-%{release}
+%description	%_description
 
 # Build Required packages
 BuildRequires:  xxd
@@ -74,55 +75,51 @@ Requires:       pkgconfig(pthread-stubs)
 Recommends:     numactl
 
 # Provided packges
-#Provides:       bundled(llama-batched)
-#Provides:       bundled(llama-batched-bench)
-#Provides:       bundled(llama-bench)
-#Provides:       bundled(llama-cli)
-#Provides:       bundled(llama-convert-llama2c-to-ggml)
-#Provides:       bundled(llama-embedding)
-#Provides:       bundled(llama-eval-callback)
-#Provides:       bundled(llama-export-lora)
-#Provides:       bundled(llama-gbnf-validator)
-#Provides:       bundled(llama-gguf)
-#Provides:       bundled(llama-gguf-hash)
-#Provides:       bundled(llama-gguf-split)
-#Provides:       bundled(llama-gritlm)
-#Provides:       bundled(llama-imatrix)
-#Provides:       bundled(llama-infill)
-#Provides:       bundled(llama-llava-cli)
-#Provides:       bundled(llama-minicpmv-cli)
-#Provides:       bundled(llama-lookahead)
-#Provides:       bundled(llama-lookup)
-#Provides:       bundled(llama-lookup-create)
-#Provides:       bundled(llama-lookup-merge)
-#Provides:       bundled(llama-lookup-stats)
-#Provides:       bundled(llama-parallel)
-#Provides:       bundled(llama-passkey)
-#Provides:       bundled(llama-perplexity)
-#Provides:       bundled(llama-q8dot)
-#Provides:       bundled(llama-quantize)
-#Provides:       bundled(llama-quantize-stats)
-#Provides:       bundled(llama-retrieval)
-#Provides:       bundled(llama-save-load-state)
-#Provides:       bundled(llama-server)
-#Provides:       bundled(llama-simple)
-#Provides:       bundled(llama-simple-chat)
-#Provides:       bundled(llama-run)
-#Provides:       bundled(llama-speculative)
-#Provides:       bundled(llama-tokenize)
-#Provides:       bundled(llama-vdot)
-#Provides:       bundled(llama-cvector-generator)
-#Provides:       bundled(llama-gen-docs)
+Provides:       bundled(llama-batched)
+Provides:       bundled(llama-batched-bench)
+Provides:       bundled(llama-bench)
+Provides:       bundled(llama-cli)
+Provides:       bundled(llama-convert-llama2c-to-ggml)
+Provides:       bundled(llama-embedding)
+Provides:       bundled(llama-eval-callback)
+Provides:       bundled(llama-export-lora)
+Provides:       bundled(llama-gbnf-validator)
+Provides:       bundled(llama-gguf)
+Provides:       bundled(llama-gguf-hash)
+Provides:       bundled(llama-gguf-split)
+Provides:       bundled(llama-gritlm)
+Provides:       bundled(llama-imatrix)
+Provides:       bundled(llama-infill)
+Provides:       bundled(llama-llava-cli)
+Provides:       bundled(llama-minicpmv-cli)
+Provides:       bundled(llama-lookahead)
+Provides:       bundled(llama-lookup)
+Provides:       bundled(llama-lookup-create)
+Provides:       bundled(llama-lookup-merge)
+Provides:       bundled(llama-lookup-stats)
+Provides:       bundled(llama-parallel)
+Provides:       bundled(llama-passkey)
+Provides:       bundled(llama-perplexity)
+Provides:       bundled(llama-q8dot)
+Provides:       bundled(llama-quantize)
+Provides:       bundled(llama-quantize-stats)
+Provides:       bundled(llama-retrieval)
+Provides:       bundled(llama-save-load-state)
+Provides:       bundled(llama-server)
+Provides:       bundled(llama-simple)
+Provides:       bundled(llama-simple-chat)
+Provides:       bundled(llama-run)
+Provides:       bundled(llama-speculative)
+Provides:       bundled(llama-tokenize)
+Provides:       bundled(llama-vdot)
+Provides:       bundled(llama-cvector-generator)
+Provides:       bundled(llama-gen-docs)
 
-%description %_description
+# -----------------------------------------------------------------------------
+# sub packages
+# -----------------------------------------------------------------------------
 
-# ---------------------------------------------------------------------------
-%package -n llama-cpp-all
-Summary:	%{summary} with openmp and curl without ssl
-
-%description -n llama-cpp-all %_description
-# ----------------------------------------------------------------------------
-
+# TODO
 
 # -----------------------------------------------------------------------------
 # prep
