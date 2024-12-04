@@ -29,7 +29,7 @@ Summary:	LLM inference in C/C++
 Name:		llama-cpp
 License:        MIT AND Apache-2.0 AND LicenseRef-Fedora-Public-Domain
 Epoch:		1
-Version:	b4248
+Version:	b4265
 ExclusiveArch:  x86_64 aarch64
 Release:        %autorelease
 URL:            https://github.com/ggerganov/llama.cpp
