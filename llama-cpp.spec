@@ -29,7 +29,7 @@ Summary:	LLM inference in C/C++
 Name:		llama-cpp
 License:        MIT AND Apache-2.0 AND LicenseRef-Fedora-Public-Domain
 Epoch:		1
-Version:        b4206
+Version:	b4248
 ExclusiveArch:  x86_64 aarch64
 Release:        %autorelease
 URL:            https://github.com/ggerganov/llama.cpp
@@ -49,27 +49,68 @@ BuildRequires:  glibc-langpack-en
 BuildRequires:  glibc-langpack-is
 BuildRequires:  glibc-all-langpacks
 # packages found in .github/workflows/server.yml
+BuildRequires:  curl
 BuildRequires:  pkgconfig(libcurl)
 BuildRequires:  libcurl-devel
 # packages that either are or possibly needed
 BuildRequires:  gcc-c++
+BuildRequires:	gcc-gfortran
 BuildRequires:  make
 BuildRequires:  clang
+BuildRequires:  gdb
 BuildRequires:  gcc
 BuildRequires:  glib
 BuildRequires:  glib-devel
 BuildRequires:  glibc
 BuildRequires:  glibc-devel
-
-# hardware acceleration / optimization packages
-BuildRequires:  openmpi
-BuildRequires:  pthreadpool-devel
-BuildRequires:  pkgconfig(pthread-stubs)
+BuildRequires:  multilib-rpm-config
 
 # user required package
-Requires:       curl
+Requires:	curl
 Requires:       pkgconfig(libcurl)
 Requires:       pkgconfig(pthread-stubs)
+
+# python requirements from:
+# .devops/full.Dockerfile
+# ./requirements/requirements-*
+
+# hardware acceleration / optimization packages:
+## pthread
+Requires:	pthreadpool
+BuildRequires:	pthreadpool
+BuildRequires:  pthreadpool-devel
+BuildRequires:  pkgconfig(pthread-stubs)
+## openmp
+Requires:	openmpi
+BuildRequires:  openmpi
+BuildRequires:	openmpi-devel
+# .devops/full.Dockerfile
+BuildRequires:	libgomp
+# BuildRequires:	libgomp-offload-amdgcn
+BuildRequires:	libgomp-offload-nvptx
+## memkind
+Requires:       memkind
+BuildRequires:  memkind
+BuildRequires:  memkind-devel
+## Blas
+Requires:	openblas
+BuildRequires:  openblas
+BuildRequires:  openblas-devel
+BuildRequires:  openblas-srpm-macros
+BuildRequires:  pkgconfig(liblas)
+BuildRequires:  pkgconfig(cblas)
+BuildRequires:  pkgconfig(cblas64)
+BuildRequires:  pkgconfig(cblas64_)
+### Blas + openmp
+Requires:	openblas-openmp
+BuildRequires:	openblas-openmp
+BuildRequires:	openblas-openmp64
+BuildRequires:	openblas-openmp64_
+### Blas + pthread
+Requires:	openblas-threads
+BuildRequires:	openblas-threads
+BuildRequires:	openblas-threads64
+BuildRequires:	openblas-threads64_
 
 # optional
 Recommends:     numactl
@@ -79,6 +120,12 @@ Recommends:     numactl
 # sub packages
 # -----------------------------------------------------------------------------
 
+%package -n llama-cpp-devel
+Summary:        %{summary} with optimizations for amx, openmp, pthread, memkind backend
+
+%description -n llama-cpp-devel
+%{_description}
+
 # TODO
 
 # -----------------------------------------------------------------------------
@@ -86,16 +133,21 @@ Recommends:     numactl
 # -----------------------------------------------------------------------------
 %prep
 %autosetup -p1 -n llama.cpp-%{version}
+%define _vpath_builddir %{_target_platform}
 
+# fix shebang lines in Python scripts
+find . -name \*.py -exec sed -i 's|/usr/bin/env python3|/usr/bin/python3|' {} \;
 # verson the *.so
 find . -iname "CMakeLists.*" -exec sed -i 's|POSITION_INDEPENDENT_CODE ON|POSITION_INDEPENDENT_CODE ON SOVERSION %{version}|' '{}' \;
 
 # no android needed
-rm -rf exmples/llma.android
+#rm -rf exmples/llma.android
 # remove documentation
-find . -name '*.md' -exec rm -rf {} \;
+#find . -name '*.md' -exec rm -rf {} \;
 # git cruft
-find . -name '.gitignore' -exec rm -rf {} \;
+#find . -name '.gitignore' -exec rm -rf {} \;
+# get rid of .gitignore files in examples
+#find . -name \.gitignore -delete
 
 # -----------------------------------------------------------------------------
 # build
@@ -104,18 +156,25 @@ find . -name '.gitignore' -exec rm -rf {} \;
 # https://github.com/ggerganov/llama.cpp/pull/10627
 # -DOAI_FULL_COMPAT
 %cmake \
+	-DCMAKE_BUILD_TYPE=Release \
+	-DLLAMA_CURL=ON \
+	-DGGML_CPU_ALL_VARIANTS=ON \
+	-DGGML_NATIVE=OFF \
+	-DGGML_BACKEND_DL=ON \
 	-DCMAKE_INSTALL_BINDIR=%{_bindir} \
 	-DCMAKE_INSTALL_LIBDIR=%{_libdir} \
 	-DINCLUDE_INSTALL_DIR=%{_includedir} \
 	-DLIB_INSTALL_DIR=%{_libdir} \
 	-DSHARE_INSTALL_PREFIX=%{_datadir} \
 	-DSYSCONF_INSTALL_DIR=%{_sysconfdir} \
-	-DBUILD_SHARED_LIBS=ON \
+	-DCMAKE_INSTALL_DO_STRIP=ON \
+	-DCMAKE_Fortran_FLAGS_RELEASE=ON \
 %if "%{_lib}" == "lib64"
         -DLIB_SUFFIX=64
 %else
         -DLIB_SUFFIX=""
 %endif
+
 %cmake_build --config Release
 
 # -----------------------------------------------------------------------------
@@ -127,7 +186,9 @@ find . -name '.gitignore' -exec rm -rf {} \;
 # -----------------------------------------------------------------------------
 # Verify
 # -----------------------------------------------------------------------------
-%if %{with check}
+# will fail `test-eval-callback`:
+
+%if 0%{?with_check}
 %check
 %ctest
 %endif
@@ -211,17 +272,14 @@ find . -name '.gitignore' -exec rm -rf {} \;
 %{_libdir}/cmake/llama/llama-config.cmake
 %{_libdir}/cmake/llama/llama-version.cmake
 %{_libdir}/libggml-amx.so
-%{_libdir}/libggml-amx.so.%{version}
 %{_libdir}/libggml-base.so
 %{_libdir}/libggml-base.so.%{version}
 %{_libdir}/libggml-cpu.so
-%{_libdir}/libggml-cpu.so.%{version}
 %{_libdir}/libggml.so
 %{_libdir}/libggml.so.%{version}
 %{_libdir}/libllama.so
 %{_libdir}/libllama.so.%{version}
 %{_libdir}/libllava_shared.so
-%{_libdir}/libllava_shared.so.%{version}
 %{_prefix}/lib/pkgconfig/llama.pc
 
 %changelog
