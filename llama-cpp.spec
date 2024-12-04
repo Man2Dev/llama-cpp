@@ -25,6 +25,8 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 * Vulkan and SYCL backend support
 * CPU+GPU hybrid inference to partially accelerate models larger than the total VRAM capacity}
 
+%undefine _enable_debug_packages
+
 Summary:	LLM inference in C/C++
 Name:		llama-cpp
 License:        MIT AND Apache-2.0 AND LicenseRef-Fedora-Public-Domain
@@ -86,8 +88,13 @@ BuildRequires:  openmpi
 BuildRequires:	openmpi-devel
 # .devops/full.Dockerfile
 BuildRequires:	libgomp
-# BuildRequires:	libgomp-offload-amdgcn
+%ifarch %{ix86} x86_64
+# https://gcc.gnu.org/wiki/OpenACC
+# Nvidia PTX and AMD Radeon devices.
 BuildRequires:	libgomp-offload-nvptx
+# BuildRequires:	libgomp-offload-amdgcn
+%endif
+
 ## memkind
 Requires:       memkind
 BuildRequires:  memkind
@@ -112,8 +119,10 @@ BuildRequires:	openblas-threads
 BuildRequires:	openblas-threads64
 BuildRequires:	openblas-threads64_
 
-# optional
+# to use --numa numactl
+# options: `common/arg.cpp`
 Recommends:     numactl
+BuildRequires:	numactl
 
 %description %_description
 # -----------------------------------------------------------------------------
@@ -203,11 +212,8 @@ find . -iname "CMakeLists.*" -exec sed -i 's|POSITION_INDEPENDENT_CODE ON|POSITI
 %{_bindir}/llama-batched-bench
 %{_bindir}/llama-bench
 %{_bindir}/llama-cli
-%{_bindir}/llama-convert-llama2c-to-ggml
-%{_bindir}/llama-cvector-generator
 %{_bindir}/llama-embedding
 %{_bindir}/llama-eval-callback
-%{_bindir}/llama-export-lora
 %{_bindir}/llama-gbnf-validator
 %{_bindir}/llama-gguf
 %{_bindir}/llama-gguf-hash
@@ -215,18 +221,15 @@ find . -iname "CMakeLists.*" -exec sed -i 's|POSITION_INDEPENDENT_CODE ON|POSITI
 %{_bindir}/llama-gritlm
 %{_bindir}/llama-imatrix
 %{_bindir}/llama-infill
-%{_bindir}/llama-llava-cli
 %{_bindir}/llama-lookahead
 %{_bindir}/llama-lookup
 %{_bindir}/llama-lookup-create
 %{_bindir}/llama-lookup-merge
 %{_bindir}/llama-lookup-stats
-%{_bindir}/llama-minicpmv-cli
 %{_bindir}/llama-parallel
 %{_bindir}/llama-passkey
 %{_bindir}/llama-perplexity
 %{_bindir}/llama-quantize
-%{_bindir}/llama-quantize-stats
 %{_bindir}/llama-retrieval
 %{_bindir}/llama-run
 %{_bindir}/llama-save-load-state
@@ -239,7 +242,6 @@ find . -iname "CMakeLists.*" -exec sed -i 's|POSITION_INDEPENDENT_CODE ON|POSITI
 %{_bindir}/test-arg-parser
 %{_bindir}/test-autorelease
 %{_bindir}/test-backend-ops
-%{_bindir}/test-barrier
 %{_bindir}/test-chat-template
 %{_bindir}/test-grammar-integration
 %{_bindir}/test-grammar-parser
@@ -247,9 +249,6 @@ find . -iname "CMakeLists.*" -exec sed -i 's|POSITION_INDEPENDENT_CODE ON|POSITI
 %{_bindir}/test-llama-grammar
 %{_bindir}/test-log
 %{_bindir}/test-model-load-cancel
-%{_bindir}/test-quantize-fns
-%{_bindir}/test-quantize-perf
-%{_bindir}/test-rope
 %{_bindir}/test-sampling
 %{_bindir}/test-tokenizer-0
 %{_bindir}/test-tokenizer-1-bpe
@@ -271,15 +270,12 @@ find . -iname "CMakeLists.*" -exec sed -i 's|POSITION_INDEPENDENT_CODE ON|POSITI
 %{_includedir}/llama.h
 %{_libdir}/cmake/llama/llama-config.cmake
 %{_libdir}/cmake/llama/llama-version.cmake
-%{_libdir}/libggml-amx.so
 %{_libdir}/libggml-base.so
 %{_libdir}/libggml-base.so.%{version}
-%{_libdir}/libggml-cpu.so
 %{_libdir}/libggml.so
 %{_libdir}/libggml.so.%{version}
 %{_libdir}/libllama.so
 %{_libdir}/libllama.so.%{version}
-%{_libdir}/libllava_shared.so
 %{_prefix}/lib/pkgconfig/llama.pc
 
 %changelog
