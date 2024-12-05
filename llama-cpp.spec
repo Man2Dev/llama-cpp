@@ -193,10 +193,12 @@ find . -name '.gitignore' -exec rm -rf {} \;
 # -----------------------------------------------------------------------------
 # Verify
 # -----------------------------------------------------------------------------
-# will fail `test-eval-callback`:
+# will fail test-eval-callback: curl eval-callback
 
+%if 0%{?with_check}
 %check
 %ctest
+%endif
 
 # -----------------------------------------------------------------------------
 # Files
