@@ -25,8 +25,6 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 * Vulkan and SYCL backend support
 * CPU+GPU hybrid inference to partially accelerate models larger than the total VRAM capacity}
 
-%undefine _enable_debug_packages
-
 Summary:	LLM inference in C/C++
 Name:		llama-cpp
 License:        MIT AND Apache-2.0 AND LicenseRef-Fedora-Public-Domain
@@ -92,6 +90,7 @@ BuildRequires:	libgomp
 # https://gcc.gnu.org/wiki/OpenACC
 # Nvidia PTX and AMD Radeon devices.
 BuildRequires:	libgomp-offload-nvptx
+# AMD rocm
 # BuildRequires:	libgomp-offload-amdgcn
 %endif
 
@@ -142,21 +141,17 @@ Summary:        %{summary} with optimizations for amx, openmp, pthread, memkind 
 # -----------------------------------------------------------------------------
 %prep
 %autosetup -p1 -n llama.cpp-%{version}
-%define _vpath_builddir %{_target_platform}
-
-# fix shebang lines in Python scripts
 find . -name \*.py -exec sed -i 's|/usr/bin/env python3|/usr/bin/python3|' {} \;
 # verson the *.so
 find . -iname "CMakeLists.*" -exec sed -i 's|POSITION_INDEPENDENT_CODE ON|POSITION_INDEPENDENT_CODE ON SOVERSION %{version}|' '{}' \;
 
-# no android needed
-#rm -rf exmples/llma.android
+# remove phone packages
+rm -rf exmples/llma.android
+rm -rf examples/llama.swiftui
 # remove documentation
-#find . -name '*.md' -exec rm -rf {} \;
+find . -name '*.md' -exec rm -rf {} \;
 # git cruft
-#find . -name '.gitignore' -exec rm -rf {} \;
-# get rid of .gitignore files in examples
-#find . -name \.gitignore -delete
+find . -name '.gitignore' -exec rm -rf {} \;
 
 # -----------------------------------------------------------------------------
 # build
@@ -164,6 +159,9 @@ find . -iname "CMakeLists.*" -exec sed -i 's|POSITION_INDEPENDENT_CODE ON|POSITI
 %build
 # https://github.com/ggerganov/llama.cpp/pull/10627
 # -DOAI_FULL_COMPAT
+# build options:
+# ggml/CMakeLists.txt
+# .devops/full.Dockerfile
 %cmake \
 	-DCMAKE_BUILD_TYPE=Release \
 	-DLLAMA_CURL=ON \
@@ -197,10 +195,8 @@ find . -iname "CMakeLists.*" -exec sed -i 's|POSITION_INDEPENDENT_CODE ON|POSITI
 # -----------------------------------------------------------------------------
 # will fail `test-eval-callback`:
 
-%if 0%{?with_check}
 %check
 %ctest
-%endif
 
 # -----------------------------------------------------------------------------
 # Files
