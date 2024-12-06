@@ -70,11 +70,17 @@ Requires:	curl
 Requires:       pkgconfig(libcurl)
 Requires:       pkgconfig(pthread-stubs)
 
-# python requirements from:
-# .devops/full.Dockerfile
-# ./requirements/requirements-*
+# to use --numa numactl
+# options: `common/arg.cpp`
+Recommends:     numactl
+BuildRequires:	numactl
 
 # hardware acceleration / optimization packages:
+blis-threads.i686
+## memkind
+Requires:       memkind
+BuildRequires:  memkind
+BuildRequires:  memkind-devel
 ## pthread
 Requires:	pthreadpool
 BuildRequires:	pthreadpool
@@ -86,18 +92,7 @@ BuildRequires:  openmpi
 BuildRequires:	openmpi-devel
 # .devops/full.Dockerfile
 BuildRequires:	libgomp
-%ifarch %{ix86} x86_64
-# https://gcc.gnu.org/wiki/OpenACC
-# Nvidia PTX and AMD Radeon devices.
-BuildRequires:	libgomp-offload-nvptx
-# AMD rocm
-# BuildRequires:	libgomp-offload-amdgcn
-%endif
 
-## memkind
-Requires:       memkind
-BuildRequires:  memkind
-BuildRequires:  memkind-devel
 ## Blas
 Requires:	openblas
 BuildRequires:  openblas
@@ -112,16 +107,37 @@ Requires:	openblas-openmp
 BuildRequires:	openblas-openmp
 BuildRequires:	openblas-openmp64
 BuildRequires:	openblas-openmp64_
-### Blas + pthread
+### Blas + pthreads
 Requires:	openblas-threads
 BuildRequires:	openblas-threads
 BuildRequires:	openblas-threads64
 BuildRequires:	openblas-threads64_
 
-# to use --numa numactl
-# options: `common/arg.cpp`
-Recommends:     numactl
-BuildRequires:	numactl
+## Blis
+Requires:	blis
+BuildRequires:	blis
+BuildRequires:	blis-devel
+BuildRequires:	blis-srpm-macros
+### Blis + openmp
+Requires:	blis-openmp
+BuildRequires:  blis-openmp
+BuildRequires:  blis-openmp64
+### Blis + pthreads
+Requires:	blis-threads
+BuildRequires:	blis-threads
+BuildRequires:	blis-threads64
+
+%ifarch %{ix86} x86_64
+# https://gcc.gnu.org/wiki/OpenACC
+# Nvidia PTX and AMD Radeon devices.
+BuildRequires:	libgomp-offload-nvptx
+# AMD rocm
+# BuildRequires:	libgomp-offload-amdgcn
+%endif
+
+# python requirements from:
+# .devops/full.Dockerfile
+# ./requirements/requirements-*
 
 %description %_description
 # -----------------------------------------------------------------------------
@@ -129,7 +145,7 @@ BuildRequires:	numactl
 # -----------------------------------------------------------------------------
 
 %package -n llama-cpp-devel
-Summary:        %{summary} with optimizations for amx, openmp, pthread, memkind backend
+Summary:        %{summary} - devel
 
 %description -n llama-cpp-devel
 %{_description}
