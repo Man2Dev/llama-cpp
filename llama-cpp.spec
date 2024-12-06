@@ -34,9 +34,11 @@ ExclusiveArch:  x86_64 aarch64
 Release:        %autorelease
 URL:            https://github.com/ggerganov/llama.cpp
 Source0:        %{url}/archive/%{version}.tar.gz#/llama.cpp-%{version}.tar.gz
+Patch0:		0001-fix-for-building-with-no-internet-connection.patch
 Provides:       llama-cpp-full = %{version}-%{release}
 
 # Build Required packages
+BuildRequires:  git-core
 BuildRequires:  xxd
 BuildRequires:  cmake
 BuildRequires:  wget
@@ -54,8 +56,9 @@ BuildRequires:  pkgconfig(libcurl)
 BuildRequires:  libcurl-devel
 # packages that either are or possibly needed
 BuildRequires:  gcc-c++
-BuildRequires:	gcc-gfortran
 BuildRequires:  make
+BuildRequires:	automake
+BuildRequires:	autoconf
 BuildRequires:  clang
 BuildRequires:  gdb
 BuildRequires:  gcc
@@ -64,6 +67,12 @@ BuildRequires:  glib-devel
 BuildRequires:  glibc
 BuildRequires:  glibc-devel
 BuildRequires:  multilib-rpm-config
+# https://docs.fedoraproject.org/en-US/packaging-guidelines/Fortran/
+# https://gcc.gnu.org/wiki/GFortran
+BuildRequires:	gcc-gfortran
+BuildRequires:	libgfortran
+BuildRequires:	libgfortran-static
+# https://docs.fedoraproject.org/en-US/packaging-guidelines/Web_Assets/
 
 # user required package
 Requires:	curl
@@ -75,33 +84,49 @@ Requires:       pkgconfig(pthread-stubs)
 Recommends:     numactl
 BuildRequires:	numactl
 
-# hardware acceleration / optimization packages:
-blis-threads.i686
+# python
+# https://docs.fedoraproject.org/en-US/packaging-guidelines/Python
+# python requirements from:
+# .devops/full.Dockerfile
+# ./requirements/requirements-*
+BuildRequires:	python3-devel
+
+# hardware accelerate framework:
+
 ## memkind
 Requires:       memkind
 BuildRequires:  memkind
 BuildRequires:  memkind-devel
+
+## multiprocessing paradigms:
+## OpenMP (Open Multi-Processing)
+# .devops/full.Dockerfile
+BuildRequires:	libgomp
+%ifarch %{ix86} x86_64
+# https://gcc.gnu.org/wiki/OpenACC
+# Nvidia PTX and AMD Radeon devices.
+BuildRequires:	libgomp-offload-nvptx
+# AMD rocm
+# BuildRequires:	libgomp-offload-amdgcn
+%endif
+
 ## pthread
 Requires:	pthreadpool
 BuildRequires:	pthreadpool
 BuildRequires:  pthreadpool-devel
 BuildRequires:  pkgconfig(pthread-stubs)
-## openmp
+
+## MPI 
 Requires:	openmpi
 BuildRequires:  openmpi
 BuildRequires:	openmpi-devel
-# .devops/full.Dockerfile
-BuildRequires:	libgomp
+BuildRequires:	rpm-mpi-hooks
 
-## Blas
+## Blas (Basic Linear Algebra System)
+# OpenBLAS, FLAME, ATLAS, FlexiBLAS, Intel, NVHPC
 Requires:	openblas
 BuildRequires:  openblas
 BuildRequires:  openblas-devel
-BuildRequires:  openblas-srpm-macros
-BuildRequires:  pkgconfig(liblas)
-BuildRequires:  pkgconfig(cblas)
-BuildRequires:  pkgconfig(cblas64)
-BuildRequires:  pkgconfig(cblas64_)
 ### Blas + openmp
 Requires:	openblas-openmp
 BuildRequires:	openblas-openmp
@@ -112,6 +137,25 @@ Requires:	openblas-threads
 BuildRequires:	openblas-threads
 BuildRequires:	openblas-threads64
 BuildRequires:	openblas-threads64_
+# may not be needed:
+BuildRequires:  openblas-static
+BuildRequires:  openblas-serial
+BuildRequires:  openblas-serial64
+BuildRequires:  openblas-serial64_
+# end
+BuildRequires:  openblas-srpm-macros
+BuildRequires:  pkgconfig(liblas)
+BuildRequires:  pkgconfig(cblas)
+BuildRequires:  pkgconfig(cblas64)
+BuildRequires:  pkgconfig(cblas64_)
+
+## lapack
+BuildRequires:	lapack
+BuildRequires:	lapack-devel
+BuildRequires:	lapack-static
+BuildRequires:	lapack64
+BuildRequires:	lapack64_
+# BuildRequires:	rocsolver
 
 ## Blis
 Requires:	blis
@@ -126,18 +170,6 @@ BuildRequires:  blis-openmp64
 Requires:	blis-threads
 BuildRequires:	blis-threads
 BuildRequires:	blis-threads64
-
-%ifarch %{ix86} x86_64
-# https://gcc.gnu.org/wiki/OpenACC
-# Nvidia PTX and AMD Radeon devices.
-BuildRequires:	libgomp-offload-nvptx
-# AMD rocm
-# BuildRequires:	libgomp-offload-amdgcn
-%endif
-
-# python requirements from:
-# .devops/full.Dockerfile
-# ./requirements/requirements-*
 
 %description %_description
 # -----------------------------------------------------------------------------
@@ -191,7 +223,7 @@ find . -name '.gitignore' -exec rm -rf {} \;
 	-DSHARE_INSTALL_PREFIX=%{_datadir} \
 	-DSYSCONF_INSTALL_DIR=%{_sysconfdir} \
 	-DCMAKE_INSTALL_DO_STRIP=ON \
-	-DCMAKE_Fortran_FLAGS_RELEASE=ON \
+	-DCMAKE_Fortran_FLAGS_RELEASE="-DNDEBUG" \
 %if "%{_lib}" == "lib64"
         -DLIB_SUFFIX=64
 %else
@@ -209,12 +241,11 @@ find . -name '.gitignore' -exec rm -rf {} \;
 # -----------------------------------------------------------------------------
 # Verify
 # -----------------------------------------------------------------------------
-# will fail test-eval-callback: curl eval-callback
+# will fail test-eval-callback: curl `examples/eval-callback/CMakeLists.txt`
+# tests in: `scripts/`
 
-%if 0%{?with_check}
 %check
 %ctest
-%endif
 
 # -----------------------------------------------------------------------------
 # Files
