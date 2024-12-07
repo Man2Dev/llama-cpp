@@ -29,11 +29,14 @@ Summary:	LLM inference in C/C++
 Name:		llama-cpp
 License:        MIT AND Apache-2.0 AND LicenseRef-Fedora-Public-Domain
 Epoch:		1
-Version:	b4267
+Version:	b4283
 ExclusiveArch:  x86_64 aarch64
 Release:        %autorelease
 URL:            https://github.com/ggerganov/llama.cpp
 Source0:        %{url}/archive/%{version}.tar.gz#/llama.cpp-%{version}.tar.gz
+# https://github.com/ggerganov/llama.cpp/pull/10706
+# ctest will fail test-eval-callback: curl 
+# found in `examples/eval-callback/CMakeLists.txt`
 Patch0:		0001-fix-for-building-with-no-internet-connection.patch
 Provides:       llama-cpp-full = %{version}-%{release}
 
@@ -142,7 +145,6 @@ BuildRequires:  openblas-static
 BuildRequires:  openblas-serial
 BuildRequires:  openblas-serial64
 BuildRequires:  openblas-serial64_
-# end
 BuildRequires:  openblas-srpm-macros
 BuildRequires:  pkgconfig(liblas)
 BuildRequires:  pkgconfig(cblas)
@@ -241,9 +243,7 @@ find . -name '.gitignore' -exec rm -rf {} \;
 # -----------------------------------------------------------------------------
 # Verify
 # -----------------------------------------------------------------------------
-# will fail test-eval-callback: curl `examples/eval-callback/CMakeLists.txt`
-# tests in: `scripts/`
-
+# other tests in: `scripts/`
 %check
 %ctest
 
