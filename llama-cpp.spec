@@ -131,10 +131,9 @@ Requires:       memkind
 BuildRequires:  memkind
 BuildRequires:  memkind-devel
 
-## multiprocessing paradigms:
+## multiprocessing paradigms: (OpenMP/pthread)
 
 ## OpenMP (Open Multi-Processing)
-# .devops/full.Dockerfile
 BuildRequires:	libgomp
 %ifarch %{ix86} x86_64
 # https://gcc.gnu.org/wiki/OpenACC
@@ -149,12 +148,6 @@ Requires:	pthreadpool
 BuildRequires:	pthreadpool
 BuildRequires:  pthreadpool-devel
 BuildRequires:  pkgconfig(pthread-stubs)
-
-## MPI 
-Requires:	openmpi
-BuildRequires:  openmpi
-BuildRequires:	openmpi-devel
-BuildRequires:	rpm-mpi-hooks
 
 ## Blas (Basic Linear Algebra System)
 # OpenBLAS, FLAME, ATLAS, FlexiBLAS, Intel, NVHPC
