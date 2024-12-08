@@ -59,8 +59,6 @@ Source0:        %{url}/archive/%{version}.tar.gz#/llama.cpp-%{version}.tar.gz
 # ctest will fail test-eval-callback: curl 
 # found in `examples/eval-callback/CMakeLists.txt`
 Patch0:		0001-fix-for-building-with-no-internet-connection.patch
-Provides:       llama-cpp-full = %{version}-%{release}
-Provides:	bundled(ggml) = %{version}-%{release}
 Requires:	ggml
 
 # Build Required packages
@@ -246,14 +244,17 @@ Requires:	blis
 BuildRequires:	blis
 BuildRequires:	blis-devel
 BuildRequires:	blis-srpm-macros
+%if %{with_omp}
 ### Blis + openmp
 Requires:	blis-openmp
 BuildRequires:  blis-openmp
 BuildRequires:  blis-openmp64
+%else
 ### Blis + pthreads
 Requires:	blis-threads
 BuildRequires:	blis-threads
 BuildRequires:	blis-threads64
+%endif
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Vulkan
