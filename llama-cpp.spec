@@ -29,6 +29,8 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 %define with_doc       %{?_without_doc:       0} %{?!_without_doc:       1}
 # use OpenMP parallelization backaend
 %define with_omp       %{?_without_omp:       0} %{?!_without_omp:       1}
+%define with_blis       %{?_without_blis:       0} %{?!_without_blis:       1}
+%define with_rocm       %{?_without_rocm:       0} %{?!_without_rocm:       1}
 
 %if 0%{?__isa_bits} == 64
 %define with_x64 1
@@ -48,7 +50,7 @@ Summary:	LLM inference in C/C++ - with OpenMP parallelization
 Name:		llama-cpp
 License:        MIT AND Apache-2.0 AND LicenseRef-Fedora-Public-Domain
 Epoch:		1
-Version:	b4288
+Version:	b4290
 ExclusiveArch:  x86_64 aarch64
 Release:        %autorelease
 URL:            https://github.com/ggerganov/llama.cpp
@@ -59,6 +61,7 @@ Source0:        %{url}/archive/%{version}.tar.gz#/llama.cpp-%{version}.tar.gz
 Patch0:		0001-fix-for-building-with-no-internet-connection.patch
 Provides:       llama-cpp-full = %{version}-%{release}
 Provides:	bundled(ggml) = %{version}-%{release}
+Requires:	ggml
 
 # Build Required packages
 BuildRequires:  git-core
@@ -140,15 +143,29 @@ Recommends:     numactl
 BuildRequires:	numactl
 
 # python
-# https://docs.fedoraproject.org/en-US/packaging-guidelines/Python
-# python requirements from:
-# .devops/full.Dockerfile
+# For the extra python package gguf that comes with llama-cpp
+%global pypi_name gguf
+%global pypi_version 0.1.0
 # ./requirements/requirements-*
 Recommends:	python3
 BuildRequires:	python3-devel
+BuildRequires:	python3-huggingface-hub
 BuildRequires:  python3dist(pip)
 BuildRequires:  python3dist(poetry)
-# TODO
+BuildRequires:  python3dist(pillow)
+BuildRequires:  python3dist(torch)
+BuildRequires:  python3dist(torchvision)
+BuildRequires:  python3dist(torchvision)
+BuildRequires:  python3dist(matplotlib)
+BuildRequires:  python3dist(requests)
+BuildRequires:  python3dist(aiohttp)
+BuildRequires:  python3dist(pytest)
+BuildRequires:  python3dist(numpy)
+BuildRequires:  python3dist(prometheus-client)
+BuildRequires:  python3dist(sentencepiece)
+BuildRequires:  python3dist(cffi)
+# https://pypi.org/project/openai/
+# https://pypi.org/project/transformers/
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # hardware accelerate framework:
@@ -164,7 +181,6 @@ BuildRequires:	libgomp
 %ifarch x86_64
 # https://gcc.gnu.org/wiki/OpenACC
 # Nvidia PTX and AMD Radeon devices.
-Recommends:	libgomp-offload-nvptx
 BuildRequires:	libgomp-offload-nvptx
 %endif
 %else
@@ -252,8 +268,8 @@ BuildRequires:	blis-threads64
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Rocm
 # GGML_HIP_UMA
-# BuildRequires:	rocsolver
 %ifarch x86_64
+# BuildRequires:	rocsolver
 # BuildRequires:	libgomp-offload-amdgcn
 %endif
 
