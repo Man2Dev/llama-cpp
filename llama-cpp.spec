@@ -25,11 +25,27 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 * Vulkan and SYCL backend support
 * CPU+GPU hybrid inference to partially accelerate models larger than the total VRAM capacity}
 
-Summary:	LLM inference in C/C++
+# enableing doc
+%define with_doc       %{?_without_doc:       0} %{?!_without_doc:       1}
+# use OpenMP parallelization backaend
+%define with_omp       %{?_without_omp:       0} %{?!_without_omp:       1}
+
+%ifarch x86_64
+%bcond_without rocm
+%define with_x64 1
+%else
+%bcond_with rocm
+%endif
+
+%ifarch %{ix86}
+%define with_x64 0
+%endif
+
+Summary:	LLM inference in C/C++ - with OpenMP parallelization
 Name:		llama-cpp
 License:        MIT AND Apache-2.0 AND LicenseRef-Fedora-Public-Domain
 Epoch:		1
-Version:	b4283
+Version:	b4288
 ExclusiveArch:  x86_64 aarch64
 Release:        %autorelease
 URL:            https://github.com/ggerganov/llama.cpp
@@ -47,6 +63,7 @@ BuildRequires:  xxd
 BuildRequires:  cmake
 BuildRequires:  wget
 BuildRequires:  langpacks-en
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # glibc packages added just in case
 # glibc-all-langpacks and glibc-langpack-is are needed for GETTEXT_LOCALE and
 # GETTEXT_ISO_LOCALE test prereq's, glibc-langpack-en ensures en_US.UTF-8.
@@ -59,6 +76,10 @@ BuildRequires:  curl
 BuildRequires:  pkgconfig(libcurl)
 BuildRequires:  libcurl-devel
 # packages that either are or possibly needed
+BuildRequires:	valgrind
+BuildRequires:	valgrind-devel
+BuildRequires:	valgrind-tools-devel
+BuildRequires:	csmock-plugin-valgrind
 BuildRequires:  gcc-c++
 BuildRequires:	libstdc++
 BuildRequires:	libstdc++-devel
@@ -106,6 +127,8 @@ BuildRequires:  libubsan
 BuildRequires:  libubsan-static
 BuildRequires:  liblsan
 BuildRequires:  liblsan-static
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 # user required package
 Requires:	curl
 Requires:       pkgconfig(libcurl)
@@ -123,66 +146,77 @@ BuildRequires:	numactl
 # ./requirements/requirements-*
 Recommends:	python3
 BuildRequires:	python3-devel
+BuildRequires:  python3dist(pip)
+BuildRequires:  python3dist(poetry)
+# TODO
 
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # hardware accelerate framework:
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-## High Bandwidth Memory (HBM)
-Requires:       memkind
-BuildRequires:  memkind
-BuildRequires:  memkind-devel
+# parallelization
+# multiprocessing paradigms (OpenMP/pthread):
 
-## multiprocessing paradigms: (OpenMP/pthread)
-
+%if %{with_omp}
 ## OpenMP (Open Multi-Processing)
+# option: GGML_OPENMP=ON
 BuildRequires:	libgomp
-%ifarch %{ix86} x86_64
 # https://gcc.gnu.org/wiki/OpenACC
 # Nvidia PTX and AMD Radeon devices.
+Recommends:	libgomp-offload-nvptx
 BuildRequires:	libgomp-offload-nvptx
-# AMD rocm
-# BuildRequires:	libgomp-offload-amdgcn
-%endif
-
+%else
 ## pthread
 Requires:	pthreadpool
 BuildRequires:	pthreadpool
 BuildRequires:  pthreadpool-devel
 BuildRequires:  pkgconfig(pthread-stubs)
+%endif
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+## High Bandwidth Memory (HBM):
+# option: GGML_CPU_HBM=ON
+Requires:       memkind
+BuildRequires:  memkind
+BuildRequires:  memkind-devel
 
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ## Blas (Basic Linear Algebra System)
+# GGML_BLAS_VENDOR=
 # OpenBLAS, FLAME, ATLAS, FlexiBLAS, Intel, NVHPC
-Requires:	openblas
+# OpenBLAS
 BuildRequires:  openblas
 BuildRequires:  openblas-devel
+%if %{with_omp}
 ### Blas + openmp
-Requires:	openblas-openmp
-BuildRequires:	openblas-openmp
+#BuildRequires:	openblas-openmp
 BuildRequires:	openblas-openmp64
 BuildRequires:	openblas-openmp64_
+%else
 ### Blas + pthreads
-Requires:	openblas-threads
-BuildRequires:	openblas-threads
+#BuildRequires:	openblas-threads
 BuildRequires:	openblas-threads64
 BuildRequires:	openblas-threads64_
-# may not be needed:
+%endif
+# these OpenBLAS packages may not be needed:
 BuildRequires:  openblas-static
-BuildRequires:  openblas-serial
-BuildRequires:  openblas-serial64
-BuildRequires:  openblas-serial64_
+#BuildRequires:  openblas-serial
+#BuildRequires:  openblas-serial64
+#BuildRequires:  openblas-serial64_
 BuildRequires:  openblas-srpm-macros
 BuildRequires:  pkgconfig(liblas)
 BuildRequires:  pkgconfig(cblas)
 BuildRequires:  pkgconfig(cblas64)
 BuildRequires:  pkgconfig(cblas64_)
-
 ## lapack
 BuildRequires:	lapack
 BuildRequires:	lapack-devel
 BuildRequires:	lapack-static
 BuildRequires:	lapack64
 BuildRequires:	lapack64_
-# BuildRequires:	rocsolver
 
+# FlexiBLAS
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ## Blis
 Requires:	blis
 BuildRequires:	blis
@@ -197,9 +231,23 @@ Requires:	blis-threads
 BuildRequires:	blis-threads
 BuildRequires:	blis-threads64
 
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Vulkan
+# set(GGML_VULKAN_CHECK_RESULTS OFF)
+# set(GGML_VULKAN_DEBUG         OFF)
+# set(GGML_VULKAN_MEMORY_DEBUG  OFF)
+# set(GGML_VULKAN_SHADER_DEBUG_INFO OFF)
+# set(GGML_VULKAN_PERF      OFF)
+# set(GGML_VULKAN_VALIDATE  OFF)
+# set(GGML_VULKAN_RUN_TESTS OFF)
 
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Rocm
+# GGML_HIP_UMA
+# BuildRequires:	rocsolver
+%ifarch %{ix86} x86_64
+# BuildRequires:	libgomp-offload-amdgcn
+%endif
 
 %description %_description
 # -----------------------------------------------------------------------------
@@ -224,7 +272,6 @@ Summary:        %{summary} - test
 %description test
 %{_description}
 
-
 # TODO
 
 # -----------------------------------------------------------------------------
@@ -232,10 +279,23 @@ Summary:        %{summary} - test
 # -----------------------------------------------------------------------------
 %prep
 %autosetup -p1 -n llama.cpp-%{version}
+# pyhton fix
 find . -name \*.py -exec sed -i 's|/usr/bin/env python3|/usr/bin/python3|' {} \;
-# -----------------------------------------------------------------------------
 # verson the *.so
 find . -iname "CMakeLists.*" -exec sed -i 's|POSITION_INDEPENDENT_CODE ON|POSITION_INDEPENDENT_CODE ON SOVERSION %{version}|' '{}' \;
+# shared libs need to be Off to enable hardware accelerate framework:
+# sed -i -e 's/@BUILD_SHARED_LIBS@/OFF/' cmake/llama-config.cmake.in
+
+# add environment variables manually to avoid cmake issue with `FindGit`
+# export LLAMA_VERSION=0.0.4284
+# export LLAMA_BUILD_COMMIT=d9c3ba2b
+# export LLAMA_BUILD_NUMBER=4284
+# export BRANCH_NAME=${{ github.head_ref || github.ref_name }}
+export GGML_NLOOP=3
+export GGML_N_THREADS=1
+export LLAMA_LOG_COLORS=1
+export LLAMA_LOG_PREFIX=1
+export LLAMA_LOG_TIMESTAMPS=1
 
 # remove phone packages
 rm -rf exmples/llma.android
@@ -254,22 +314,23 @@ find . -name '.gitignore' -exec rm -rf {} \;
 # build options:
 # ggml/CMakeLists.txt
 # .devops/full.Dockerfile
+# -DBUILD_SHARED_LIBS:BOOL=OFF \
+# -DCMAKE_SKIP_RPATH:BOOL=ON \
 %cmake \
-	-DCMAKE_BUILD_TYPE=Release \
-	-DLLAMA_CURL=ON \
-	-DLLAMA_SHARED_LIB=OFF \
-	-DGGML_CPU_ALL_VARIANTS=ON \
-	-DGGML_NATIVE=OFF \
-	-DGGML_BACKEND_DL=ON \
-	-DCMAKE_INSTALL_BINDIR=%{_bindir} \
-	-DCMAKE_INSTALL_LIBDIR=%{_libdir} \
-	-DINCLUDE_INSTALL_DIR=%{_includedir} \
-	-DLIB_INSTALL_DIR=%{_libdir} \
-	-DSHARE_INSTALL_PREFIX=%{_datadir} \
-	-DSYSCONF_INSTALL_DIR=%{_sysconfdir} \
-	-DCMAKE_INSTALL_DO_STRIP=ON \
-	-DCMAKE_Fortran_FLAGS_RELEASE="-DNDEBUG" \
-%if "%{_lib}" == "lib64"
+	-DCMAKE_BUILD_TYPE:STRING="-DNDEBUG" \
+        -DCMAKE_C_FLAGS_RELEASE:STRING="-DNDEBUG" \
+        -DCMAKE_CXX_FLAGS_RELEASE:STRING="-DNDEBUG" \
+        -DCMAKE_Fortran_FLAGS_RELEASE:STRING="-DNDEBUG" \
+	-DLLAMA_CURL:BOOL=ON \
+	-DGGML_CPU_ALL_VARIANTS:BOOL=ON \
+	-DGGML_NATIVE:BOOL=OFF \
+	-DGGML_BACKEND_DL:BOOL=ON \
+	-DSHARE_INSTALL_PREFIX:PATH=%{_prefix} \
+	-DINCLUDE_INSTALL_DIR:PATH=%{_includedir} \
+	-DLIB_INSTALL_DIR:PATH=%{_libdir} \
+	-DSYSCONF_INSTALL_DIR:PATH=%{_sysconfdir} \
+	-DCMAKE_INSTALL_DO_STRIP:BOOL=ON \
+%if 0%{?__isa_bits} == 64
         -DLIB_SUFFIX=64
 %else
         -DLIB_SUFFIX=""
@@ -281,7 +342,7 @@ find . -name '.gitignore' -exec rm -rf {} \;
 # Install
 # -----------------------------------------------------------------------------
 %install
-%cmake_install
+%cmake_install --prefix %{_prefix}
 
 # -----------------------------------------------------------------------------
 # Verify
