@@ -30,15 +30,18 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 # use OpenMP parallelization backaend
 %define with_omp       %{?_without_omp:       0} %{?!_without_omp:       1}
 
+%if 0%{?__isa_bits} == 64
+%define with_x64 1
+%endif
+
 %ifarch x86_64
 %bcond_without rocm
-%define with_x64 1
 %else
 %bcond_with rocm
 %endif
 
 %ifarch %{ix86}
-%define with_x64 0
+%define with_x32 1
 %endif
 
 Summary:	LLM inference in C/C++ - with OpenMP parallelization
@@ -130,12 +133,9 @@ BuildRequires:  liblsan-static
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 # user required package
-Requires:	curl
-Requires:       pkgconfig(libcurl)
-Requires:       pkgconfig(pthread-stubs)
-
 # to use --numa numactl
 # options: `common/arg.cpp`
+Requires:	curl
 Recommends:     numactl
 BuildRequires:	numactl
 
@@ -161,10 +161,12 @@ BuildRequires:  python3dist(poetry)
 ## OpenMP (Open Multi-Processing)
 # option: GGML_OPENMP=ON
 BuildRequires:	libgomp
+%ifarch x86_64
 # https://gcc.gnu.org/wiki/OpenACC
 # Nvidia PTX and AMD Radeon devices.
 Recommends:	libgomp-offload-nvptx
 BuildRequires:	libgomp-offload-nvptx
+%endif
 %else
 ## pthread
 Requires:	pthreadpool
@@ -189,24 +191,30 @@ BuildRequires:  openblas-devel
 %if %{with_omp}
 ### Blas + openmp
 #BuildRequires:	openblas-openmp
+%if %{with_x64}
 BuildRequires:	openblas-openmp64
 BuildRequires:	openblas-openmp64_
+%endif
 %else
 ### Blas + pthreads
 #BuildRequires:	openblas-threads
+%if %{with_x64}
 BuildRequires:	openblas-threads64
 BuildRequires:	openblas-threads64_
+%endif
 %endif
 # these OpenBLAS packages may not be needed:
 BuildRequires:  openblas-static
 #BuildRequires:  openblas-serial
-#BuildRequires:  openblas-serial64
-#BuildRequires:  openblas-serial64_
+BuildRequires:  openblas-serial64
+BuildRequires:  openblas-serial64_
 BuildRequires:  openblas-srpm-macros
 BuildRequires:  pkgconfig(liblas)
-BuildRequires:  pkgconfig(cblas)
+#BuildRequires:  pkgconfig(cblas)
+%if %{with_x64}
 BuildRequires:  pkgconfig(cblas64)
 BuildRequires:  pkgconfig(cblas64_)
+%endif
 ## lapack
 BuildRequires:	lapack
 BuildRequires:	lapack-devel
@@ -245,7 +253,7 @@ BuildRequires:	blis-threads64
 # Rocm
 # GGML_HIP_UMA
 # BuildRequires:	rocsolver
-%ifarch %{ix86} x86_64
+%ifarch x86_64
 # BuildRequires:	libgomp-offload-amdgcn
 %endif
 
