@@ -29,6 +29,12 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 %define with_doc	%{?_without_doc:	0} %{?!_without_doc:	1}
 # enable {ADDRESS, THREAD, UNDEFINED} sanitizer (THREAD is broken)
 %define with_san	%{?_without_san:	0} %{?!_without_san:	1}
+# ADDRESS sanitizer
+%define with_san_add	%{?_without_san:	0} %{?!_without_san:	1}
+# THREAD sanitizer
+%define with_san_thr	%{?_without_san:	0} %{?!_without_san:	1}
+# UNDEFINED sanitizer
+%define with_san_und	%{?_without_san:	0} %{?!_without_san:	1}
 # use the 64 bit (OpenMP)/Pthreads parallelization backaend
 %define with_omp	%{?_without_omp:	0} %{?!_without_omp:	1}
 # use the HBM backaend
@@ -41,6 +47,10 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 %define with_openblas	%{?_without_blas:       0} %{?!_without_blas:   1}
 # use Rocm backaend
 %define with_rocm	%{?_without_rocm:	0} %{?!_without_rocm:	1}
+# with clients
+%define with_examples	%{?_without_examples:	0} %{?!_without_examples:	1}
+# with tests
+%define with_test	%{?_without_test:	0} %{?!_without_test:	1}
 
 %define guff-py 0
 
@@ -59,7 +69,7 @@ Summary:	LLM inference in C/C++ - OpenMP parallelization
 Name:		llama-cpp
 License:        MIT AND Apache-2.0 AND LicenseRef-Fedora-Public-Domain
 Epoch:		1
-Version:	b4293
+Version:	b4304
 ExclusiveArch:  x86_64 aarch64
 Release:        %autorelease
 URL:            https://github.com/ggerganov/llama.cpp
@@ -388,11 +398,12 @@ rm -rf %{pypi_name}.egg-info
 # .devops/full.Dockerfile
 # -DBUILD_SHARED_LIBS:BOOL=OFF \
 # -DCMAKE_SKIP_RPATH:BOOL=ON \
+# -DLLAMA_ALL_WARNINGS_3RD_PARTY=ON \
 %cmake \
 	-DCMAKE_BUILD_TYPE:STRING="-DNDEBUG" \
-        -DCMAKE_C_FLAGS_RELEASE:STRING="-DNDEBUG" \
-        -DCMAKE_CXX_FLAGS_RELEASE:STRING="-DNDEBUG" \
-        -DCMAKE_Fortran_FLAGS_RELEASE:STRING="-DNDEBUG" \
+	-DCMAKE_C_FLAGS_RELEASE:STRING="-DNDEBUG" \
+	-DCMAKE_CXX_FLAGS_RELEASE:STRING="-DNDEBUG" \
+	-DCMAKE_Fortran_FLAGS_RELEASE:STRING="-DNDEBUG" \
 	-DLLAMA_CURL:BOOL=ON \
 	-DGGML_CPU_ALL_VARIANTS:BOOL=ON \
 	-DGGML_NATIVE:BOOL=OFF \
@@ -404,9 +415,21 @@ rm -rf %{pypi_name}.egg-info
 	-DSYSCONF_INSTALL_DIR:PATH=%{_sysconfdir} \
 	-DCMAKE_INSTALL_DO_STRIP:BOOL=ON \
 %if 0%{?__isa_bits} == 64
-        -DLIB_SUFFIX=64
+	-DLIB_SUFFIX=64
 %else
-        -DLIB_SUFFIX=""
+	-DLIB_SUFFIX=""
+%endif
+%if %{with_hbm}
+
+%endif
+%if %{with_omp}
+%if %{with_openblas}
+	-DGGML_BLAS=ON \
+	-DGGML_BLAS_VENDOR=OpenBLAS \
+%else
+	-DGGML_BLAS=ON \
+	-DGGML_BLAS_VENDOR=FlexiBLAS \
+%endif
 %endif
 
 %cmake_build --config Release
