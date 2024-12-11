@@ -2,7 +2,7 @@
 #
 # *No copyright* The Unlicense
 # ----------------------------
-# common/base64.hpp
+# common/base64.hppTHREAD
 # common/stb_image.h
 # These are public domain
 #
@@ -27,34 +27,62 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 
 # enableing doc
 %define with_doc	%{?_without_doc:	0} %{?!_without_doc:	1}
-# enable {ADDRESS, THREAD, UNDEFINED} sanitizer (THREAD is broken)
-%define with_san	%{?_without_san:	0} %{?!_without_san:	1}
-# ADDRESS sanitizer
-%define with_san_add	%{?_without_san:	0} %{?!_without_san:	1}
-# THREAD sanitizer
-%define with_san_thr	%{?_without_san:	0} %{?!_without_san:	1}
-# UNDEFINED sanitizer
-%define with_san_und	%{?_without_san:	0} %{?!_without_san:	1}
-# use the 64 bit (OpenMP)/Pthreads parallelization backaend
-%define with_omp	%{?_without_omp:	0} %{?!_without_omp:	1}
-# use the HBM backaend
-%define with_hbm	%{?_without_hbm:	0} %{?!_without_hbm:	1}
-# use Blis backaend
-%define with_blis	%{?_without_blis:	0} %{?!_without_blis:	1}
-# use Blas backaend
-%define with_blas	%{?_without_blas:	0} %{?!_without_blas:	1}
-# use (OpenBlas)/FlexiBlas backaend
-%define with_openblas	%{?_without_blas:       0} %{?!_without_blas:   1}
-# use Rocm backaend
-%define with_rocm	%{?_without_rocm:	0} %{?!_without_rocm:	1}
-# with clients
+%define with_doc 1
+# with examples (clients)
 %define with_exa	%{?_without_exa:	0} %{?!_without_exa:	1}
+%define with_exa 1
 # with tests
 %define with_test	%{?_without_test:	0} %{?!_without_test:	1}
+%define with_test 1
+# use the HBM backaend [breaks build]
+%define with_hbm	%{?_without_hbm:	0} %{?!_without_hbm:	1}
+%define with_hbm 0
+# with a parallelization backaend
+%define with_par	%{?_without_par:	0} %{?!_without_par:	1}
+%define with_par 1
+# use 64 bit (OpenMP)/Pthreads parallelization (ON=OpenMP / OFF=Pthreads)
+%define with_omp	%{?_without_omp:	0} %{?!_without_omp:	1}
+%define with_omp 1
+# use Blas backaend
+%define with_blas	%{?_without_blas:	0} %{?!_without_blas:	1}
+%define with_blas 0
+# use (OpenBlas)/FlexiBlas backaend (On=OpenBlas / OFF=FlexiBlas)
+%define with_openblas	%{?_without_blas:       0} %{?!_without_blas:   1}
+%define with_openblas 1
+# use Blis backaend
+%define with_blis	%{?_without_blis:	0} %{?!_without_blis:	1}
+%define with_blis 0
+# use Rocm backaend
+%define with_rocm	%{?_without_rocm:	0} %{?!_without_rocm:	1}
+%define with_rocm 0
+# Build with native/legacy CMake HIP support (ON=native / OFF=legacy)
+%define with_hips	%{?_without_hips:	0} %{?!_without_hips:	1}
+%define with_hips 1
+# enable {ADDRESS, THREAD, UNDEFINED} sanitizer (THREAD is broken)
+%define with_san	%{?_without_san:	0} %{?!_without_san:	1}
+%define with_san 0
+# ADDRESS sanitizer
+%define with_san_add	%{?_without_san:	0} %{?!_without_san:	1}
+%define with_san_add 0
+# THREAD sanitizer
+%define with_san_thr	%{?_without_san:	0} %{?!_without_san:	1}
+%define with_san_thr 0
+# UNDEFINED sanitizer
+%define with_san_und	%{?_without_san:	0} %{?!_without_san:	1}
+%define with_san_und 0
+
 # with package python-guff-py
 %define with_guffpy	%{?_without_guffpy:	0} %{?!_without_guffpy:	1}
-
 %define with_guffpy 0
+# with package webui
+%define with_webui	%{?_without_webui:	0} %{?!_without_webui:	1}
+%define with_webui 0
+# only build llama-server package 
+%define with_lls	%{?_without_lls:	0} %{?!_without_lls:	1}
+%define with_lls 0
+# only build GGML_RPC package
+%define with_rpc	%{?_without_rpc:	0} %{?!_without_rpc:	1}
+%define with_rpc 1
 
 # use only 64 bit version of backend
 %if 0%{?__isa_bits} == 64
@@ -169,6 +197,8 @@ BuildRequires:	numactl
 # .devops/full.Dockerfile
 # scripts/check-requirements.sh
 # .devops/tools.sh
+# ref: .github/workflows/server.yml
+# examples/server/tests/requirements.txt
 %global pypi_name gguf
 %global pypi_version 0.1.0
 Recommends:	python3
@@ -363,10 +393,11 @@ find . -iname "CMakeLists.*" -exec sed -i 's|POSITION_INDEPENDENT_CODE ON|POSITI
 # sed -i -e 's/@BUILD_SHARED_LIBS@/OFF/' cmake/llama-config.cmake.in
 
 # add environment variables manually to avoid cmake issue with `FindGit`
-export LLAMA_VERSION=0.0."$(git rev-list --count HEAD)"
+export LLAMA_VERSION=0.0."$(echo %{version} | grep -oP "[0-9][0-9][0-9][0-9]")"
+export LLAMA_INSTALL_VERSION=0.0."$(echo %{version} | grep -oP "[0-9][0-9][0-9][0-9]")"
 # export LLAMA_BUILD_COMMIT=d9c3ba2b
 export SHORT_HASH="$(git rev-parse --short=7 HEAD)"
-export LLAMA_BUILD_NUMBER="$(git rev-list --count HEAD)"
+export LLAMA_BUILD_NUMBER="$(echo %{version} | grep -oP "[0-9][0-9][0-9][0-9]")"
 export BRANCH_NAME=%{version}
 export GGML_NLOOP=3
 export GGML_N_THREADS=1
@@ -379,7 +410,10 @@ export LLAMA_LOG_VERBOSITY=10
 rm -rf exmples/llma.android
 rm -rf examples/llama.swiftui
 # remove documentation
-# find . -name '*.md' -exec rm -rf {} \;
+%if %{with_doc}
+%else
+find . -name '*.md' -exec rm -rf {} \;
+%endif
 # git cruft
 find . -name '.gitignore' -exec rm -rf {} \;
 
@@ -417,17 +451,54 @@ rm -rf %{pypi_name}.egg-info
 	-DLIB_INSTALL_DIR:PATH=%{_libdir} \
 	-DSYSCONF_INSTALL_DIR:PATH=%{_sysconfdir} \
 	-DCMAKE_INSTALL_DO_STRIP:BOOL=ON \
+        -DCMAKE_INSTALL_PREFIX:PATH=%{_prefix} \
+        -DCMAKE_INSTALL_BINDIR:PATH=%{_bindir} \
+        -DCMAKE_INSTALL_LIBDIR:PATH=%{_libdir} \
+        -DCMAKE_INSTALL_DATADIR:PATH=%{_datadir} \
+        -DCMAKE_INSTALL_MANDIR:PATH=%{_mandir} \
+        -DCMAKE_INSTALL_INCLUDEDIR:PATH=%{_includedir} \
+        -DCMAKE_INSTALL_LOCALSTATEDIR:PATH=%{_localstatedir} \
+        -DCMAKE_INSTALL_SHAREDSTATEDIR:PATH=%{_sharedstatedir} \
+        -DCMAKE_INSTALL_RUNSTATEDIR:PATH=%{_rundir} \
+        -DCMAKE_INSTALL_LIBEXECDIR:PATH=%{_libexecdir} \
+        -DCMAKE_INSTALL_INFODIR:PATH=%{_infodir} \
+        -DCMAKE_INSTALL_MANDIR:PATH=%{_mandir} \
+%if %{with_rpc}
+	-DGGML_RPC:BOOL=ON \
+%else
+	-DGGML_RPC:BOOL=OFF \
+%endif
+%if %{with_exa}
+	-DLLAMA_BUILD_EXAMPLES:BOOL=ON \
+%else
+	-DLLAMA_BUILD_EXAMPLES:BOOL=OFF \
+%endif
+%if %{with_test}
+        -DLLAMA_BUILD_TESTS:BOOL=ON \
+%else
+        -DLLAMA_BUILD_TESTS:BOOL=OFF \
+%endif
+%if %{with_hbm}
+        -DGGML_CPU_HBM:BOOL=ON \
+%else
+        -DGGML_CPU_HBM:BOOL=OFF \
+%endif
 %if 0%{?__isa_bits} == 64
 	-DLIB_SUFFIX=64
 %else
 	-DLIB_SUFFIX=""
 %endif
-%if %{with_hbm}
+%if %{with_par}
+%if %{with_omp}
 
 %endif
+%endif
 
+%if %{with_lls}
+%cmake_build --target llama-server
+%else
 %cmake_build --config Release
-
+%endif
 # -----------------------------------------------------------------------------
 # Install
 # -----------------------------------------------------------------------------
@@ -441,6 +512,9 @@ rm -rf %{pypi_name}.egg-info
 # ./scripts/debug-test.sh
 # ./scripts/compare-commits.sh
 # ./scripts/compare-llama-bench.py --check
+#cd examples/server/tests
+#SLOW_TESTS=1 ./tests.sh
+
 %check
 %ctest
 
@@ -468,9 +542,15 @@ rm -rf %{pypi_name}.egg-info
 %{_libdir}/libggml-base.so
 %{_libdir}/libggml.so
 
+%if %{with_test}
 %files test
 %{_bindir}/test-*
+%endif
 
+#convert_hf_to_gguf.py
+#convert_hf_to_gguf_update.py
+#convert_llama_ggml_to_gguf.py
+#convert_lora_to_gguf.py
 %files convert-hf-to-gguf
 %{_bindir}/convert_hf_to_gguf.py
 
