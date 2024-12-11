@@ -373,6 +373,7 @@ export GGML_N_THREADS=1
 export LLAMA_LOG_COLORS=1
 export LLAMA_LOG_PREFIX=1
 export LLAMA_LOG_TIMESTAMPS=1
+export LLAMA_LOG_VERBOSITY=10
 
 # remove phone packages
 rm -rf exmples/llma.android
@@ -423,15 +424,6 @@ rm -rf %{pypi_name}.egg-info
 %endif
 %if %{with_hbm}
 
-%endif
-%if %{with_omp}
-%if %{with_openblas}
-	-DGGML_BLAS=ON \
-	-DGGML_BLAS_VENDOR=OpenBLAS \
-%else
-	-DGGML_BLAS=ON \
-	-DGGML_BLAS_VENDOR=FlexiBLAS \
-%endif
 %endif
 
 %cmake_build --config Release
