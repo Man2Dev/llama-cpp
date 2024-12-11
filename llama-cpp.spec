@@ -48,11 +48,13 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 # use Rocm backaend
 %define with_rocm	%{?_without_rocm:	0} %{?!_without_rocm:	1}
 # with clients
-%define with_examples	%{?_without_examples:	0} %{?!_without_examples:	1}
+%define with_exa	%{?_without_exa:	0} %{?!_without_exa:	1}
 # with tests
 %define with_test	%{?_without_test:	0} %{?!_without_test:	1}
+# with package python-guff-py
+%define with_guffpy	%{?_without_guffpy:	0} %{?!_without_guffpy:	1}
 
-%define guff-py 0
+%define with_guffpy 0
 
 # use only 64 bit version of backend
 %if 0%{?__isa_bits} == 64
@@ -339,7 +341,7 @@ Summary:        %{summary} - convert-hf-to-gguf
 %{_description}
 
 # TODO
-%if %{guff-py}
+%if %{with_guffpy}
 %package -n     python3-%{pypi_name}
 Summary:        %{summary}
 %{?python_provide:%python_provide python3-%{pypi_name}}
@@ -381,7 +383,7 @@ rm -rf examples/llama.swiftui
 find . -name '.gitignore' -exec rm -rf {} \;
 
 # pyhton setup
-%if %{guff-py}
+%if %{with_guffpy}
 rm -rf %{pypi_name}.egg-info
 %generate_buildrequires
 %pyproject_buildrequires -r
