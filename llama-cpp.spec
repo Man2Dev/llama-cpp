@@ -27,7 +27,10 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 
 # enableing doc
 %define with_doc	%{?_without_doc:	0} %{?!_without_doc:	1}
-%define with_doc 1
+%define with_doc 0
+# enableing ssl
+%define with_ssl	%{?_without_ssl:	0} %{?!_without_ssl:	1}
+%define with_ssl 0
 # with examples (clients)
 %define with_exa	%{?_without_exa:	0} %{?!_without_exa:	1}
 %define with_exa 1
@@ -40,24 +43,33 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 # with a parallelization backaend
 %define with_par	%{?_without_par:	0} %{?!_without_par:	1}
 %define with_par 1
+# keep lapack at build
+%define with_lapack	%{?_without_lapack:	0} %{?!_without_lapack:	1}
+%define with_lapack 1
 # use 64 bit (OpenMP)/Pthreads parallelization (ON=OpenMP / OFF=Pthreads)
 %define with_omp	%{?_without_omp:	0} %{?!_without_omp:	1}
 %define with_omp 1
-# use Blas backaend
-%define with_blas	%{?_without_blas:	0} %{?!_without_blas:	1}
-%define with_blas 0
+# with nvptx parallelization backaend
+%define with_nvptx	%{?_without_nvptx:	0} %{?!_without_nvptx:	1}
+%define with_nvptx 1
 # use (OpenBlas)/FlexiBlas backaend (On=OpenBlas / OFF=FlexiBlas)
 %define with_openblas	%{?_without_blas:       0} %{?!_without_blas:   1}
-%define with_openblas 1
+%define with_openblas 0
 # use Blis backaend
 %define with_blis	%{?_without_blis:	0} %{?!_without_blis:	1}
 %define with_blis 0
+# use Vulkan backaend
+%define with_vlk	%{?_without_vlk:	0} %{?!_without_vlk:	1}
+%define with_vlk 0
 # use Rocm backaend
 %define with_rocm	%{?_without_rocm:	0} %{?!_without_rocm:	1}
 %define with_rocm 0
 # Build with native/legacy CMake HIP support (ON=native / OFF=legacy)
 %define with_hips	%{?_without_hips:	0} %{?!_without_hips:	1}
 %define with_hips 1
+# use amdgcn offload
+%define with_gcn	%{?_without_gcn:	0} %{?!_without_gcn:	1}
+%define with_gcn 0
 # enable {ADDRESS, THREAD, UNDEFINED} sanitizer (THREAD is broken)
 %define with_san	%{?_without_san:	0} %{?!_without_san:	1}
 %define with_san 0
@@ -70,10 +82,9 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 # UNDEFINED sanitizer
 %define with_san_und	%{?_without_san:	0} %{?!_without_san:	1}
 %define with_san_und 0
-
 # with package python-guff-py
 %define with_guffpy	%{?_without_guffpy:	0} %{?!_without_guffpy:	1}
-%define with_guffpy 0
+%define with_guffpy 1
 # with package webui
 %define with_webui	%{?_without_webui:	0} %{?!_without_webui:	1}
 %define with_webui 0
@@ -83,6 +94,41 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 # only build GGML_RPC package
 %define with_rpc	%{?_without_rpc:	0} %{?!_without_rpc:	1}
 %define with_rpc 1
+
+%if 0%{?with_openblas} && 0%{?with_omp}
+%global summary LLM inference in C/C++. OpenMP parallelization, and OpenBlas backend.
+%endif
+
+%if 0%{?with_openblas} && 0%{?with_omp} && 0%{?with_nvptx}
+%global summary LLM inference in C/C++. OpenMP parallelization, OpenBlas, and nvptx offload.
+%endif
+
+%if 0%{?with_blis} && 0%{?with_omp}
+%global summary LLM inference in C/C++. OpenMP parallelization, and Blis backend.
+%endif
+
+%if 0%{?with_blis} && 0%{?with_omp} && 0%{?with_nvptx}
+%global summary LLM inference in C/C++. OpenMP parallelization, Blis, and nvptx offest.
+%endif
+
+# THREAD sanitizer doens not work with OpenMP.
+# will use Pthreads:
+%if %{with_san_thr}
+%define with_omp 0
+%endif
+
+# settings for Rocm release
+%if %{with_rocm}
+%ifarch x86_64
+%global summary LLM inference in C/C++. OpenMP parallelization, amdgcn offload, and Rocm.
+%define with_gcn 1
+%define with_hips 1
+%define with_nvptx 0
+%define with_openblas 0
+%define with_blis 0
+%define with_vlk 0
+%endif
+%endif
 
 # use only 64 bit version of backend
 %if 0%{?__isa_bits} == 64
@@ -95,11 +141,11 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 %bcond_with rocm
 %endif
 
-Summary:	LLM inference in C/C++ - OpenMP parallelization
+Summary:	LLM inference in C/C++
 Name:		llama-cpp
 License:        MIT AND Apache-2.0 AND LicenseRef-Fedora-Public-Domain
 Epoch:		1
-Version:	b4304
+Version:	b4311
 ExclusiveArch:  x86_64 aarch64
 Release:        %autorelease
 URL:            https://github.com/ggerganov/llama.cpp
@@ -108,7 +154,7 @@ Source0:        %{url}/archive/%{version}.tar.gz#/llama.cpp-%{version}.tar.gz
 # ctest will fail test-eval-callback: curl 
 # found in `examples/eval-callback/CMakeLists.txt`
 Patch0:		0001-fix-for-building-with-no-internet-connection.patch
-Requires:	ggml
+Requires:	%{name}-ggml = %{version}-%{release}
 
 # Build Required packages
 BuildRequires:  git-core
@@ -199,11 +245,13 @@ BuildRequires:	numactl
 # .devops/tools.sh
 # ref: .github/workflows/server.yml
 # examples/server/tests/requirements.txt
+# with_guffpy
 %global pypi_name gguf
-%global pypi_version 0.1.0
+%global pypi_version 0.11.0
 Recommends:	python3
 BuildRequires:	python3-devel
 BuildRequires:	python3-huggingface-hub
+BuildRequires:	python3-pure-protobuf
 BuildRequires:  python3dist(pip)
 BuildRequires:  python3dist(poetry)
 BuildRequires:  python3dist(pillow)
@@ -218,6 +266,7 @@ BuildRequires:  python3dist(numpy)
 BuildRequires:  python3dist(prometheus-client)
 BuildRequires:  python3dist(sentencepiece)
 BuildRequires:  python3dist(cffi)
+BuildRequires:  python3dist(protobuf)
 # https://pypi.org/project/openai/
 # https://pypi.org/project/transformers/
 
@@ -231,9 +280,12 @@ BuildRequires:  python3dist(cffi)
 # option: GGML_OPENMP=ON
 BuildRequires:	libgomp
 %ifarch x86_64
+%if %{with_nvptx}
 # https://gcc.gnu.org/wiki/OpenACC
 # Nvidia PTX and AMD Radeon devices.
+Requires:	libgomp-offload-nvptx
 BuildRequires:	libgomp-offload-nvptx
+%endif
 %endif
 %else
 ## pthread
@@ -254,7 +306,16 @@ BuildRequires:  memkind-devel
 ## Blas (Basic Linear Algebra System)
 # GGML_BLAS_VENDOR=
 # OpenBLAS, FLAME, ATLAS, FlexiBLAS, Intel, NVHPC
-%if %{with_blas}
+%if %{with_lapack}
+## lapack
+BuildRequires:  lapack
+BuildRequires:  lapack-devel
+BuildRequires:  lapack-static
+%if %{with_x64}
+BuildRequires:  lapack64
+BuildRequires:  lapack64_
+%endif
+%endif
 ## OpenBLAS
 %if %{with_openblas}
 BuildRequires:  openblas
@@ -282,25 +343,15 @@ BuildRequires:	openblas-threads64_
 BuildRequires:	openblas-threads
 %endif
 %endif
-# TODO
 # these OpenBLAS packages may not be needed:
-## lapack
-BuildRequires:  lapack
-BuildRequires:  lapack-devel
-BuildRequires:  lapack-static
 %if %{with_x64}
 BuildRequires:	openblas-serial64
 BuildRequires:  openblas-serial64_
-## lapack
-BuildRequires:	lapack64
-BuildRequires:	lapack64_
 %else
 BuildRequires:  openblas-serial
 %endif
 %else
 ## FlexiBLAS
-flexiblas
-%endif
 %endif
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -325,20 +376,53 @@ BuildRequires:	blis-threads64
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Vulkan
-# set(GGML_VULKAN_CHECK_RESULTS OFF)
-# set(GGML_VULKAN_DEBUG         OFF)
-# set(GGML_VULKAN_MEMORY_DEBUG  OFF)
-# set(GGML_VULKAN_SHADER_DEBUG_INFO OFF)
-# set(GGML_VULKAN_PERF      OFF)
-# set(GGML_VULKAN_VALIDATE  OFF)
-# set(GGML_VULKAN_RUN_TESTS OFF)
+%if %{with_vlk}
+Requires:	vulkan-headers
+BuildRequires:	vulkan-headers
+Requires:	vulkan-loader
+BuildRequires:	vulkan-loader
+BuildRequires:	vulkan-loader-devel
+Requires:	vulkan-tools
+BuildRequires:	vulkan-tools
+BuildRequires:	vulkan-utility-libraries-devel
+Requires:	vulkan-validation-layers
+BuildRequires:	vulkan-validation-layers
+BuildRequires:	vulkan-volk-devel
+Requires:	VulkanMemoryAllocator
+BuildRequires:	VulkanMemoryAllocator
+BuildRequires:	VulkanMemoryAllocator-devel
+Requires:	mesa-vulkan-drivers
+BuildRequires:	mesa-vulkan-drivers
+%endif
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Rocm
 # GGML_HIP_UMA
+%if %{with rocm}
 %ifarch x86_64
-# BuildRequires:	rocsolver
-# BuildRequires:	libgomp-offload-amdgcn
+BuildRequires:	rocsolver
+BuildRequires:	rocsolver-devel
+#BuildRequires:	rocsolver-gfx1100
+#BuildRequires:	rocsolver-gfx1103
+#BuildRequires:	rocsolver-gfx90a
+#BuildRequires:	rocsolver-gfx942
+BuildRequires:	hipblas-devel
+BuildRequires:  rocm-comgr-devel
+BuildRequires:  rocm-hip-devel
+BuildRequires:  rocblas-devel
+BuildRequires:  hipblas-devel
+BuildRequires:  hipcc-libomp-devel
+BuildRequires:  rocm-runtime-devel
+BuildRequires:  rocm-rpm-macros
+BuildRequires:  rocm-rpm-macros-modules
+%if %{with_gcn}
+BuildRequires:	libgomp-offload-amdgcn
+%endif
+
+Requires:       rocblas
+Requires:       rocsolver
+Requires:       hipblas
+%endif
 %endif
 
 %description %_description
@@ -354,6 +438,7 @@ Summary:        %{summary} - ggml
 
 %package devel
 Summary:        %{summary} - devel
+Requires:       %{name}-ggml%{?_isa} = %{version}-%{release}
 
 %description devel
 %{_description}
@@ -377,7 +462,7 @@ Summary:        %{summary}
 %{?python_provide:%python_provide python3-%{pypi_name}}
 
 %description -n python3-%{pypi_name}
-Tool to interact and enumerate LDAP instances.
+%{_description}
 %endif
 
 # -----------------------------------------------------------------------------
@@ -406,33 +491,51 @@ export LLAMA_LOG_PREFIX=1
 export LLAMA_LOG_TIMESTAMPS=1
 export LLAMA_LOG_VERBOSITY=10
 
+# Blis
+%if %{with_blis}
+export GOMP_CPU_AFFINITY="0-19"
+export BLIS_NUM_THREADS=14
+%endif
 # remove phone packages
 rm -rf exmples/llma.android
 rm -rf examples/llama.swiftui
 # remove documentation
-%if %{with_doc}
-%else
+%if !%{with_doc}
 find . -name '*.md' -exec rm -rf {} \;
 %endif
 # git cruft
 find . -name '.gitignore' -exec rm -rf {} \;
 
+# Rocm
+%if %{with_rocm}
+module load rocm/default	
+%endif
+
 # pyhton setup
 %if %{with_guffpy}
+cd %{_vpath_srcdir}/gguf-py
 rm -rf %{pypi_name}.egg-info
 %generate_buildrequires
 %pyproject_buildrequires -r
+cd -
 %endif
 
 # -----------------------------------------------------------------------------
 # build
 # -----------------------------------------------------------------------------
 %build
+# pyhton setup
+%if %{with_guffpy}
+cd %{_vpath_srcdir}/gguf-py
+%pyproject_wheel
+cd -
+%endif
 # https://github.com/ggerganov/llama.cpp/pull/10627
 # -DOAI_FULL_COMPAT
 # build options:
 # ggml/CMakeLists.txt
 # .devops/full.Dockerfile
+# -DLLAMA_SERVER_SSL=ON
 # -DBUILD_SHARED_LIBS:BOOL=OFF \
 # -DCMAKE_SKIP_RPATH:BOOL=ON \
 # -DLLAMA_ALL_WARNINGS_3RD_PARTY=ON \
@@ -450,23 +553,43 @@ rm -rf %{pypi_name}.egg-info
 	-DINCLUDE_INSTALL_DIR:PATH=%{_includedir} \
 	-DLIB_INSTALL_DIR:PATH=%{_libdir} \
 	-DSYSCONF_INSTALL_DIR:PATH=%{_sysconfdir} \
+	-DLIB_SUFFIX=64 \
 	-DCMAKE_INSTALL_DO_STRIP:BOOL=ON \
-        -DCMAKE_INSTALL_PREFIX:PATH=%{_prefix} \
-        -DCMAKE_INSTALL_BINDIR:PATH=%{_bindir} \
-        -DCMAKE_INSTALL_LIBDIR:PATH=%{_libdir} \
-        -DCMAKE_INSTALL_DATADIR:PATH=%{_datadir} \
-        -DCMAKE_INSTALL_MANDIR:PATH=%{_mandir} \
-        -DCMAKE_INSTALL_INCLUDEDIR:PATH=%{_includedir} \
-        -DCMAKE_INSTALL_LOCALSTATEDIR:PATH=%{_localstatedir} \
-        -DCMAKE_INSTALL_SHAREDSTATEDIR:PATH=%{_sharedstatedir} \
-        -DCMAKE_INSTALL_RUNSTATEDIR:PATH=%{_rundir} \
-        -DCMAKE_INSTALL_LIBEXECDIR:PATH=%{_libexecdir} \
-        -DCMAKE_INSTALL_INFODIR:PATH=%{_infodir} \
-        -DCMAKE_INSTALL_MANDIR:PATH=%{_mandir} \
+	-DCMAKE_INSTALL_PREFIX:PATH=%{_prefix} \
+	-DCMAKE_INSTALL_BINDIR:PATH=%{_bindir} \
+	-DCMAKE_INSTALL_LIBDIR:PATH=%{_libdir} \
+	-DCMAKE_INSTALL_DATADIR:PATH=%{_datadir} \
+	-DCMAKE_INSTALL_MANDIR:PATH=%{_mandir} \
+	-DCMAKE_INSTALL_INCLUDEDIR:PATH=%{_includedir} \
+	-DCMAKE_INSTALL_LOCALSTATEDIR:PATH=%{_localstatedir} \
+	-DCMAKE_INSTALL_SHAREDSTATEDIR:PATH=%{_sharedstatedir} \
+	-DCMAKE_INSTALL_RUNSTATEDIR:PATH=%{_rundir} \
+	-DCMAKE_INSTALL_LIBEXECDIR:PATH=%{_libexecdir} \
+	-DCMAKE_INSTALL_INFODIR:PATH=%{_infodir} \
+	-DCMAKE_INSTALL_MANDIR:PATH=%{_mandir} \
+%if %{with_omp}
+	-DGGML_OPENMP:BOOL=ON \
+%else
+	-DGGML_OPENMP:BOOL=OFF \
+%endif
+%if %{with_vlk}
+	-DGGML_VULKAN:BOOL=ON \
+%else
+	-DGGML_VULKAN:BOOL=OFF \
+%endif
 %if %{with_rpc}
 	-DGGML_RPC:BOOL=ON \
 %else
 	-DGGML_RPC:BOOL=OFF \
+%endif
+%if %{with_san_add}
+	-DLLAMA_SANITIZE_ADDRESS:BOOL=ON \
+%endif
+%if %{with_san_thr}
+	-DLLAMA_SANITIZE_THREAD:BOOL=ON \
+%endif
+%if %{with_san_und}
+	-DLLAMA_SANITIZE_UNDEFINED:BOOL=ON \
 %endif
 %if %{with_exa}
 	-DLLAMA_BUILD_EXAMPLES:BOOL=ON \
@@ -483,19 +606,26 @@ rm -rf %{pypi_name}.egg-info
 %else
         -DGGML_CPU_HBM:BOOL=OFF \
 %endif
-%if 0%{?__isa_bits} == 64
-	-DLIB_SUFFIX=64
-%else
-	-DLIB_SUFFIX=""
+%if %{with_openblas}
+        -DGGML_BLAS=ON \
+        -DGGML_BLAS_VENDOR=OpenBLAS \
 %endif
-%if %{with_par}
-%if %{with_omp}
-
+%if %{with_blis}
+        -DGGML_BLAS=ON \
+        -DGGML_BLAS_VENDOR=FLAME \
+%endif
+%if %{with_rocm}
+	-DGGML_HIP=ON
+%if %{with_hips}
+	-DCMAKE_HIP_COMPILER="$(hipconfig -l)/clang"
+%else
+	-DCMAKE_C_COMPILER=hipcc
+	-DCMAKE_CXX_COMPILER=hipcc
 %endif
 %endif
 
 %if %{with_lls}
-%cmake_build --target llama-server
+%cmake_build --config Release --target llama-server
 %else
 %cmake_build --config Release
 %endif
@@ -553,6 +683,8 @@ rm -rf %{pypi_name}.egg-info
 #convert_lora_to_gguf.py
 %files convert-hf-to-gguf
 %{_bindir}/convert_hf_to_gguf.py
+
+# docs
 
 %changelog
 %autochangelog
