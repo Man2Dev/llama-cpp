@@ -504,7 +504,7 @@ find . -name '.gitignore' -exec rm -rf {} \;
 %if %{with_rocm}
 %ifarch x86_64
 %global summary LLM inference in C/C++. OpenMP parallelization, amdgcn offload, and Rocm.
-%define with_omp 1
+%define with_omp 0
 %define with_gcn 1
 %define with_hips 1
 %define with_nvptx 0
@@ -519,7 +519,7 @@ find . -name '.gitignore' -exec rm -rf {} \;
 %endif
 %endif
 
-# pyhton setup
+# python guff-py setup
 %if %{with_guffpy}
 cd %{_vpath_srcdir}/gguf-py
 %generate_buildrequires
@@ -531,12 +531,13 @@ cd -
 # build
 # -----------------------------------------------------------------------------
 %build
-# pyhton setup
+# python guff-py build
 %if %{with_guffpy}
 cd %{_vpath_srcdir}/gguf-py
 %pyproject_wheel
 cd -
 %endif
+
 # https://github.com/ggerganov/llama.cpp/pull/10627
 # -DOAI_FULL_COMPAT
 # build options:
@@ -631,6 +632,7 @@ cd -
 %endif
 %endif
 
+#	-DCMAKE_HIP_COMPILER="$(hipconfig -l)/clang"
 %if %{with_lls}
 %cmake_build --config Release --target llama-server
 %else
