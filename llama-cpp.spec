@@ -25,9 +25,9 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 * Vulkan and SYCL backend support
 * CPU+GPU hybrid inference to partially accelerate models larger than the total VRAM capacity}
 
-# enableing doc
+# enableing doc [breaks python package]
 %define with_doc	%{?_without_doc:	0} %{?!_without_doc:	1}
-%define with_doc 0
+%define with_doc 1
 # enableing ssl
 %define with_ssl	%{?_without_ssl:	0} %{?!_without_ssl:	1}
 %define with_ssl 0
@@ -84,7 +84,7 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 %define with_san_und 0
 # with package python-guff-py
 %define with_guffpy	%{?_without_guffpy:	0} %{?!_without_guffpy:	1}
-%define with_guffpy 1
+%define with_guffpy 0
 # with package webui
 %define with_webui	%{?_without_webui:	0} %{?!_without_webui:	1}
 %define with_webui 0
@@ -122,11 +122,16 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 %ifarch x86_64
 %global summary LLM inference in C/C++. OpenMP parallelization, amdgcn offload, and Rocm.
 %define with_gcn 1
-%define with_hips 1
+%define with_hips 0
 %define with_nvptx 0
 %define with_openblas 0
 %define with_blis 0
 %define with_vlk 0
+# global
+%global build_hip ON
+%global toolchain rocm
+# hipcc does not support some clang flags
+%global build_cxxflags %(echo %{optflags} | sed -e 's/-fstack-protector-strong/-Xarch_host -fstack-protector-strong/' -e 's/-fcf-protection/-Xarch_host -fcf-protection/')
 %endif
 %endif
 
@@ -245,7 +250,7 @@ BuildRequires:	numactl
 # .devops/tools.sh
 # ref: .github/workflows/server.yml
 # examples/server/tests/requirements.txt
-# with_guffpy
+%if %{with_guffpy}
 %global pypi_name gguf
 %global pypi_version 0.11.0
 Recommends:	python3
@@ -269,6 +274,7 @@ BuildRequires:  python3dist(cffi)
 BuildRequires:  python3dist(protobuf)
 # https://pypi.org/project/openai/
 # https://pypi.org/project/transformers/
+%endif
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # hardware accelerate framework:
@@ -398,16 +404,27 @@ BuildRequires:	mesa-vulkan-drivers
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Rocm
 # GGML_HIP_UMA
-%if %{with rocm}
+%if %{with_rocm}
 %ifarch x86_64
 BuildRequires:	rocsolver
 BuildRequires:	rocsolver-devel
-#BuildRequires:	rocsolver-gfx1100
-#BuildRequires:	rocsolver-gfx1103
-#BuildRequires:	rocsolver-gfx90a
-#BuildRequires:	rocsolver-gfx942
-BuildRequires:	hipblas-devel
+BuildRequires:	libchipcard-devel
+BuildRequires:	hipblaslt-devel
+BuildRequires:	hipcub-devel
+BuildRequires:	hipblas
+BuildRequires:	hipblaslt
+BuildRequires:	hipfft
+BuildRequires:	hipfft-devel
+BuildRequires:	hiprand
+BuildRequires:	hiprand-devel
+BuildRequires:	hipsolver
+BuildRequires:	hipsolver-devel
+BuildRequires:	hipsparse
+BuildRequires:  hipsparse-devel
+BuildRequires:	hipcc
+BuildRequires:	hipcc-libomp-devel
 BuildRequires:  rocm-comgr-devel
+BuildRequires:  rocm-hip
 BuildRequires:  rocm-hip-devel
 BuildRequires:  rocblas-devel
 BuildRequires:  hipblas-devel
@@ -500,7 +517,8 @@ export BLIS_NUM_THREADS=14
 rm -rf exmples/llma.android
 rm -rf examples/llama.swiftui
 # remove documentation
-%if !%{with_doc}
+%if %{with_doc}
+%else
 find . -name '*.md' -exec rm -rf {} \;
 %endif
 # git cruft
@@ -514,7 +532,6 @@ module load rocm/default
 # pyhton setup
 %if %{with_guffpy}
 cd %{_vpath_srcdir}/gguf-py
-rm -rf %{pypi_name}.egg-info
 %generate_buildrequires
 %pyproject_buildrequires -r
 cd -
@@ -615,11 +632,11 @@ cd -
         -DGGML_BLAS_VENDOR=FLAME \
 %endif
 %if %{with_rocm}
-	-DGGML_HIP=ON
+	-DGGML_HIP=ON \
 %if %{with_hips}
 	-DCMAKE_HIP_COMPILER="$(hipconfig -l)/clang"
 %else
-	-DCMAKE_C_COMPILER=hipcc
+	-DCMAKE_C_COMPILER=hipcc \
 	-DCMAKE_CXX_COMPILER=hipcc
 %endif
 %endif
