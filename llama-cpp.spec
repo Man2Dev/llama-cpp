@@ -117,24 +117,6 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 %define with_omp 0
 %endif
 
-# settings for Rocm release
-%if %{with_rocm}
-%ifarch x86_64
-%global summary LLM inference in C/C++. OpenMP parallelization, amdgcn offload, and Rocm.
-%define with_gcn 1
-%define with_hips 0
-%define with_nvptx 0
-%define with_openblas 0
-%define with_blis 0
-%define with_vlk 0
-# global
-%global build_hip ON
-%global toolchain rocm
-# hipcc does not support some clang flags
-%global build_cxxflags %(echo %{optflags} | sed -e 's/-fstack-protector-strong/-Xarch_host -fstack-protector-strong/' -e 's/-fcf-protection/-Xarch_host -fcf-protection/')
-%endif
-%endif
-
 # use only 64 bit version of backend
 %if 0%{?__isa_bits} == 64
 %define with_x64 1
@@ -511,15 +493,30 @@ export BLIS_NUM_THREADS=14
 rm -rf exmples/llma.android
 rm -rf examples/llama.swiftui
 # remove documentation
-%if %{with_doc}
-%else
+%if !%{with_doc}
 find . -name '*.md' -exec rm -rf {} \;
 %endif
 # git cruft
 find . -name '.gitignore' -exec rm -rf {} \;
 
 # Rocm
+# settings for Rocm release
 %if %{with_rocm}
+%ifarch x86_64
+%global summary LLM inference in C/C++. OpenMP parallelization, amdgcn offload, and Rocm.
+%define with_omp 1
+%define with_gcn 1
+%define with_hips 1
+%define with_nvptx 0
+%define with_openblas 0
+%define with_blis 0
+%define with_vlk 0
+# global
+%global build_hip ON
+%global toolchain rocm
+# hipcc does not support some clang flags
+%global build_cxxflags %(echo %{optflags} | sed -e 's/-fstack-protector-strong/-Xarch_host -fstack-protector-strong/' -e 's/-fcf-protection/-Xarch_host -fcf-protection/')
+%endif
 %endif
 
 # pyhton setup
@@ -627,7 +624,7 @@ cd -
 %if %{with_rocm}
 	-DGGML_HIP=ON \
 %if %{with_hips}
-	-DCMAKE_HIP_COMPILER="$(hipconfig -l)/clang"
+	-DCMAKE_HIP_COMPILER=%{_bindir}/clang++-18
 %else
 	-DCMAKE_C_COMPILER=hipcc \
 	-DCMAKE_CXX_COMPILER=hipcc
