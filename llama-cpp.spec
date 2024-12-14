@@ -140,12 +140,6 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 %define with_x64 1
 %endif
 
-%ifarch x86_64
-%bcond_without rocm
-%else
-%bcond_with rocm
-%endif
-
 Summary:	LLM inference in C/C++
 Name:		llama-cpp
 License:        MIT AND Apache-2.0 AND LicenseRef-Fedora-Public-Domain
@@ -526,7 +520,6 @@ find . -name '.gitignore' -exec rm -rf {} \;
 
 # Rocm
 %if %{with_rocm}
-module load rocm/default	
 %endif
 
 # pyhton setup
