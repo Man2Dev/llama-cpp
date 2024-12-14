@@ -1,0 +1,49 @@
+From e983e6055f5e78661b4ee92e30ec660b100092b4 Mon Sep 17 00:00:00 2001
+From: Mohammadreza Hendiani <man2dev@fedoraproject.org>
+Date: Sat, 7 Dec 2024 14:15:07 +0330
+Subject: [PATCH] fix for building with no internet connection
+
+---
+ examples/eval-callback/CMakeLists.txt | 29 +++++++++++++++++++++++----
+ 1 file changed, 25 insertions(+), 4 deletions(-)
+
+diff --git a/examples/eval-callback/CMakeLists.txt b/examples/eval-callback/CMakeLists.txt
+index 95915ed9..2983ce48 100644
+--- a/examples/eval-callback/CMakeLists.txt
++++ b/examples/eval-callback/CMakeLists.txt
+@@ -4,7 +4,28 @@ install(TARGETS ${TARGET} RUNTIME)
+ target_link_libraries(${TARGET} PRIVATE common llama ${CMAKE_THREAD_LIBS_INIT})
+ target_compile_features(${TARGET} PRIVATE cxx_std_17)
+ 
+-set(TEST_TARGET test-eval-callback)
+-add_test(NAME ${TEST_TARGET}
+-        COMMAND llama-eval-callback --hf-repo ggml-org/models --hf-file tinyllamas/stories260K.gguf --model stories260K.gguf --prompt hello --seed 42 -ngl 0)
+-set_property(TEST ${TEST_TARGET} PROPERTY LABELS eval-callback curl)
++if(MSVC)
++	execute_process(
++	    COMMAND ping www.google.com -n 2
++	    ERROR_QUIET
++	    RESULT_VARIABLE NO_CONNECTION
++    )
++else()
++	execute_process(
++	    COMMAND ping www.google.com -c 2
++	    ERROR_QUIET
++	    RESULT_VARIABLE NO_CONNECTION
++    )
++endif()
++
++if(NOT NO_CONNECTION EQUAL 0)
++	message(WARNING "Offline mode!")
++else()
++	set(TEST_TARGET test-eval-callback)
++	add_test(NAME ${TEST_TARGET}
++		COMMAND llama-eval-callback --hf-repo ggml-org/models --hf-file tinyllamas/stories260K.gguf --model stories260K.gguf --prompt hello --seed 42 -ngl 0)
++	set_property(TEST ${TEST_TARGET} PROPERTY LABELS eval-callback curl)   
++endif()
++
++
++
+-- 
+2.47.1
+
