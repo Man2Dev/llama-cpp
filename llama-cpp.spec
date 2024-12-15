@@ -504,7 +504,7 @@ find . -name '.gitignore' -exec rm -rf {} \;
 %if %{with_rocm}
 %ifarch x86_64
 %global summary LLM inference in C/C++. OpenMP parallelization, amdgcn offload, and Rocm.
-%define with_omp 0
+%define with_omp 1
 %define with_gcn 1
 %define with_hips 1
 %define with_nvptx 0
@@ -516,6 +516,8 @@ find . -name '.gitignore' -exec rm -rf {} \;
 %global toolchain rocm
 # hipcc does not support some clang flags
 %global build_cxxflags %(echo %{optflags} | sed -e 's/-fstack-protector-strong/-Xarch_host -fstack-protector-strong/' -e 's/-fcf-protection/-Xarch_host -fcf-protection/')
+%else
+%define with_rocm 0
 %endif
 %endif
 
@@ -625,14 +627,13 @@ cd -
 %if %{with_rocm}
 	-DGGML_HIP=ON \
 %if %{with_hips}
-	-DCMAKE_HIP_COMPILER=%{_bindir}/clang++-18
+	-DCMAKE_HIP_COMPILER="$(hipconfig -l)/clang"
 %else
 	-DCMAKE_C_COMPILER=hipcc \
 	-DCMAKE_CXX_COMPILER=hipcc
 %endif
 %endif
 
-#	-DCMAKE_HIP_COMPILER="$(hipconfig -l)/clang"
 %if %{with_lls}
 %cmake_build --config Release --target llama-server
 %else
