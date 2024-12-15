@@ -25,7 +25,7 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 * Vulkan and SYCL backend support
 * CPU+GPU hybrid inference to partially accelerate models larger than the total VRAM capacity}
 
-# enableing doc [breaks python package]
+# enableing doc
 %define with_doc	%{?_without_doc:	0} %{?!_without_doc:	1}
 %define with_doc 1
 # enableing ssl
