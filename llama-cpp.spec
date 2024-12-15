@@ -53,12 +53,18 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 %define with_nvptx	%{?_without_nvptx:	0} %{?!_without_nvptx:	1}
 %define with_nvptx 1
 # use Blas backaend
-%define with_openblas	%{?_without_blas:       0} %{?!_without_blas:   1}
+%define with_blas	%{?_without_blas:       0} %{?!_without_blas:   1}
 %define with_blas 1
-# use (OpenBlas)/FlexiBlas backaend (On=OpenBlas / OFF=FlexiBlas)
-%define with_openblas	%{?_without_blas:       0} %{?!_without_blas:   1}
-%define with_openblas 0
-# use Blis backaend
+# use OpenBlas vendor
+%define with_openblas	%{?_without_openblas:	0} %{?!_without_openblas:	1}
+%define with_openblas 1
+# use FlexiBlas vendor
+%define with_flexiblas	%{?_without_flexiblas:	0} %{?!_without_flexiblas:	1}
+%define with_flexiblas 0
+# use Atlas vendor
+%define with_atlas	%{?_without_atlas:	0} %{?!_without_atlas:	1}
+%define with_atlas 0
+# use Blis vendor
 %define with_blis	%{?_without_blis:	0} %{?!_without_blis:	1}
 %define with_blis 0
 # use Vulkan backaend
@@ -66,7 +72,7 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 %define with_vlk 0
 # use Rocm backaend
 %define with_rocm	%{?_without_rocm:	0} %{?!_without_rocm:	1}
-%define with_rocm 1
+%define with_rocm 0
 # Build with native/legacy CMake HIP support (ON=native / OFF=legacy)
 %define with_hips	%{?_without_hips:	0} %{?!_without_hips:	1}
 %define with_hips 0
@@ -98,22 +104,6 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 %define with_rpc	%{?_without_rpc:	0} %{?!_without_rpc:	1}
 %define with_rpc 1
 
-%if 0%{?with_openblas} && 0%{?with_omp}
-%global summary LLM inference in C/C++. OpenMP parallelization, and OpenBlas backend.
-%endif
-
-%if 0%{?with_openblas} && 0%{?with_omp} && 0%{?with_nvptx}
-%global summary LLM inference in C/C++. OpenMP parallelization, OpenBlas, and nvptx offload.
-%endif
-
-%if 0%{?with_blis} && 0%{?with_omp}
-%global summary LLM inference in C/C++. OpenMP parallelization, and Blis backend.
-%endif
-
-%if 0%{?with_blis} && 0%{?with_omp} && 0%{?with_nvptx}
-%global summary LLM inference in C/C++. OpenMP parallelization, Blis, and nvptx offest.
-%endif
-
 # THREAD sanitizer doens not work with OpenMP.
 # will use Pthreads:
 %if %{with_san_thr}
@@ -125,18 +115,22 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 %define with_x64 1
 %endif
 
+%global hw_ac %{nil} 
+
 # Rocm
 # settings for Rocm release
 %if %{with_rocm}
 %ifarch x86_64
 %global summary LLM inference in C/C++. OpenMP parallelization, amdgcn offload, and Rocm.
-%global hw_ac Rocm
+%global hw_ac -Rocm
 %define with_omp 1
 %define with_gcn 1
 %define with_nvptx 0
 %define with_hips 1
 %define with_blas 1
 %define with_openblas 0
+%define with_flexiblas 0
+%define with_atlas 0
 %define with_blis 0
 %define with_vlk 0
 %else
@@ -144,13 +138,11 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 %endif
 %endif
 
-%global hw_ac %{nil} 
-
 Summary:	LLM inference in C/C++
-Name:		llama-cpp-%{hw_ac}
+Name:		llama-cpp%{hw_ac}
 License:        MIT AND Apache-2.0 AND LicenseRef-Fedora-Public-Domain
 Epoch:		1
-Version:	b4331
+Version:	b4333
 ExclusiveArch:  x86_64 aarch64
 Release:        %autorelease
 URL:            https://github.com/ggerganov/llama.cpp
@@ -313,6 +305,7 @@ BuildRequires:  memkind-devel
 # OpenBLAS, FLAME, ATLAS, FlexiBLAS, Intel, NVHPC
 ## blas
 %if %{with_blas}
+Requires:	blas
 BuildRequires:  blas
 BuildRequires:  blas-devel
 BuildRequires:  blas-static
@@ -335,13 +328,21 @@ BuildRequires:  lapack64
 BuildRequires:  lapack64_
 %endif
 %endif
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ## OpenBLAS
 %if %{with_openblas}
+Requires:	openblas
 BuildRequires:  openblas
 BuildRequires:  openblas-devel
 BuildRequires:	openblas-static
 BuildRequires:  openblas-srpm-macros
-### Blas + openmp
+%if %{with_x64}
+BuildRequires:	openblas-serial64
+BuildRequires:  openblas-serial64_
+%else
+BuildRequires:  openblas-serial
+%endif
+### OpenBLAS + openmp
 %if %{with_omp}
 %if %{with_x64}
 BuildRequires:	openblas-openmp64
@@ -350,7 +351,7 @@ BuildRequires:	openblas-openmp64_
 BuildRequires:	openblas-openmp
 %endif
 %else
-### Blas + Pthreads
+### OpenBLAS + Pthreads
 %if %{with_x64}
 BuildRequires:	openblas-threads64
 BuildRequires:	openblas-threads64_
@@ -358,17 +359,15 @@ BuildRequires:	openblas-threads64_
 BuildRequires:	openblas-threads
 %endif
 %endif
-# these OpenBLAS packages may not be needed:
-%if %{with_x64}
-BuildRequires:	openblas-serial64
-BuildRequires:  openblas-serial64_
-%else
-BuildRequires:  openblas-serial
 %endif
-%else
-## FlexiBLAS
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+## Atlas
+%if %{with_atlas}
+Requires:	atlas
+BuildRequires:	atlas
+BuildRequires:	atlas-devel
+BuildRequires:	atlas-static
 %endif
-
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ## Blis
 %if %{with_blis}
@@ -386,6 +385,70 @@ BuildRequires:  blis-openmp64
 Requires:	blis-threads
 BuildRequires:	blis-threads
 BuildRequires:	blis-threads64
+%endif
+%endif
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+## FlexiBLAS
+%if %{with_flexiblas}
+Requires:	flexiblas
+BuildRequires:	flexiblas
+BuildRequires:	flexiblas-devel
+%if %{with_x64}
+BuildRequires:	flexiblas-hook-profile64
+BuildRequires:	flexiblas-netlib64
+%else
+BuildRequires:	flexiblas-hook-profile
+BuildRequires:	flexiblas-netlib
+%endif
+### FlexiBLAS + Atlas
+%if %{with_atlas}
+BuildRequires:	flexiblas-atlas
+%endif
+### FlexiBLAS + Blis
+%if %{with_blis}
+%if %{with_x64}
+BuildRequires:	flexiblas-blis-serial64
+%else
+BuildRequires:	flexiblas-blis-serial
+%endif
+### FlexiBLAS + Blis + OpenMP
+%if %{with_omp}
+%if %{with_x64}
+BuildRequires:	flexiblas-blis-openmp64
+%else
+BuildRequires:	flexiblas-blis-openmp
+%endif
+%else
+### FlexiBLAS + Blis + Pthreads
+%if %{with_x64}
+BuildRequires:	flexiblas-blis-threads64
+%else
+BuildRequires:	flexiblas-blis-threads
+%endif
+%endif
+%endif
+### FlexiBLAS + OpenBLAS
+%if %{with_openblas}
+%if %{with_x64}
+BuildRequires:	flexiblas-openblas-serial64
+%else
+BuildRequires:	flexiblas-openblas-serial
+%endif
+### FlexiBLAS + OpenBLAS + OpenMP
+%if %{with_omp}
+%if %{with_x64}
+BuildRequires:	flexiblas-openblas-openmp64
+%else
+BuildRequires:	flexiblas-openblas-openmp
+%endif
+### FlexiBLAS + OpenBLAS + Pthreads
+%else
+%if %{with_x64}
+BuildRequires:	flexiblas-openblas-threads64
+%else
+BuildRequires:	flexiblas-openblas-threads
+%endif
+%endif
 %endif
 %endif
 
@@ -549,7 +612,7 @@ rm -rf examples/llama.swiftui
 find . -name '*.md' -exec rm -rf {} \;
 %endif
 # git cruft
-find . -name '.gitignore' -exec rm -rf {} \;
+#find . -name '.gitignore' -exec rm -rf {} \;
 
 # Rocm
 # settings for Rocm release
@@ -660,13 +723,20 @@ module load rocm/default
 %else
         -DGGML_CPU_HBM:BOOL=OFF \
 %endif
-%if %{with_openblas}
+%if %{with_blas}
         -DGGML_BLAS=ON \
+%endif
+%if %{with_openblas}
         -DGGML_BLAS_VENDOR=OpenBLAS \
 %endif
 %if %{with_blis}
-        -DGGML_BLAS=ON \
         -DGGML_BLAS_VENDOR=FLAME \
+%endif
+%if %{with_flexiblas}
+        -DGGML_BLAS_VENDOR=FlexiBLAS \
+%endif
+%if %{with_atlas}
+        -DGGML_BLAS_VENDOR=ATLAS \
 %endif
 %if %{with_rocm}
 	-DGGML_HIP=ON \
@@ -703,9 +773,10 @@ module purge
 # ./scripts/compare-llama-bench.py --check
 #cd examples/server/tests
 #SLOW_TESTS=1 ./tests.sh
-
+%if %{with_test}
 %check
 %ctest
+%endif
 
 # -----------------------------------------------------------------------------
 # Files
