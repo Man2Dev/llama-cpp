@@ -63,7 +63,7 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 %define with_vlk 0
 # use Rocm backaend
 %define with_rocm	%{?_without_rocm:	0} %{?!_without_rocm:	1}
-%define with_rocm 1
+%define with_rocm 0
 # Build with native/legacy CMake HIP support (ON=native / OFF=legacy)
 %define with_hips	%{?_without_hips:	0} %{?!_without_hips:	1}
 %define with_hips 1
