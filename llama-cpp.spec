@@ -506,16 +506,16 @@ find . -name '.gitignore' -exec rm -rf {} \;
 %global summary LLM inference in C/C++. OpenMP parallelization, amdgcn offload, and Rocm.
 %define with_omp 1
 %define with_gcn 1
-%define with_hips 1
+%define with_hips 0
 %define with_nvptx 0
 %define with_openblas 0
 %define with_blis 0
 %define with_vlk 0
 # global
-%global build_hip ON
+#%%global build_hip ON
 %global toolchain rocm
 # hipcc does not support some clang flags
-%global build_cxxflags %(echo %{optflags} | sed -e 's/-fstack-protector-strong/-Xarch_host -fstack-protector-strong/' -e 's/-fcf-protection/-Xarch_host -fcf-protection/')
+#%%global build_cxxflags %%(echo %%{optflags} | sed -e 's/-fstack-protector-strong/-Xarch_host -fstack-protector-strong/' -e 's/-fcf-protection/-Xarch_host -fcf-protection/')
 %else
 %define with_rocm 0
 %endif
