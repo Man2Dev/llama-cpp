@@ -52,6 +52,9 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 # with nvptx parallelization backaend
 %define with_nvptx	%{?_without_nvptx:	0} %{?!_without_nvptx:	1}
 %define with_nvptx 1
+# use Blas backaend
+%define with_openblas	%{?_without_blas:       0} %{?!_without_blas:   1}
+%define with_blas 1
 # use (OpenBlas)/FlexiBlas backaend (On=OpenBlas / OFF=FlexiBlas)
 %define with_openblas	%{?_without_blas:       0} %{?!_without_blas:   1}
 %define with_openblas 0
@@ -63,13 +66,13 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 %define with_vlk 0
 # use Rocm backaend
 %define with_rocm	%{?_without_rocm:	0} %{?!_without_rocm:	1}
-%define with_rocm 0
+%define with_rocm 1
 # Build with native/legacy CMake HIP support (ON=native / OFF=legacy)
 %define with_hips	%{?_without_hips:	0} %{?!_without_hips:	1}
-%define with_hips 1
+%define with_hips 0
 # use amdgcn offload
 %define with_gcn	%{?_without_gcn:	0} %{?!_without_gcn:	1}
-%define with_gcn 0
+%define with_gcn 1
 # enable {ADDRESS, THREAD, UNDEFINED} sanitizer (THREAD is broken)
 %define with_san	%{?_without_san:	0} %{?!_without_san:	1}
 %define with_san 0
@@ -122,8 +125,29 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 %define with_x64 1
 %endif
 
+# Rocm
+# settings for Rocm release
+%if %{with_rocm}
+%ifarch x86_64
+%global summary LLM inference in C/C++. OpenMP parallelization, amdgcn offload, and Rocm.
+%global hw_ac Rocm
+%define with_omp 1
+%define with_gcn 1
+%define with_nvptx 0
+%define with_hips 1
+%define with_blas 1
+%define with_openblas 0
+%define with_blis 0
+%define with_vlk 0
+%else
+%define with_rocm 0
+%endif
+%endif
+
+%global hw_ac %{nil} 
+
 Summary:	LLM inference in C/C++
-Name:		llama-cpp
+Name:		llama-cpp-%{hw_ac}
 License:        MIT AND Apache-2.0 AND LicenseRef-Fedora-Public-Domain
 Epoch:		1
 Version:	b4327
@@ -135,7 +159,7 @@ Source0:        %{url}/archive/%{version}.tar.gz#/llama.cpp-%{version}.tar.gz
 # ctest will fail test-eval-callback: curl 
 # found in `examples/eval-callback/CMakeLists.txt`
 Patch0:		0001-fix-for-building-with-no-internet-connection.patch
-Requires:	%{name}-ggml = %{version}-%{release}
+Requires:	%{name}-ggml-%{hw_ac} = %{version}-%{release}
 
 # Build Required packages
 BuildRequires:  git-core
@@ -238,7 +262,6 @@ BuildRequires:  python3dist(poetry)
 BuildRequires:  python3dist(pillow)
 BuildRequires:  python3dist(torch)
 BuildRequires:  python3dist(torchvision)
-BuildRequires:  python3dist(torchvision)
 BuildRequires:  python3dist(matplotlib)
 BuildRequires:  python3dist(requests)
 BuildRequires:  python3dist(aiohttp)
@@ -288,8 +311,22 @@ BuildRequires:  memkind-devel
 ## Blas (Basic Linear Algebra System)
 # GGML_BLAS_VENDOR=
 # OpenBLAS, FLAME, ATLAS, FlexiBLAS, Intel, NVHPC
-%if %{with_lapack}
+## blas
+%if %{with_blas}
+BuildRequires:  blas
+BuildRequires:  blas-devel
+BuildRequires:  blas-static
+BuildRequires:  pkgconfig(cblas)
+BuildRequires:  pkgconfig(liblas)
+%if %{with_x64}
+BuildRequires:  blas64
+BuildRequires:  blas64_
+BuildRequires:  pkgconfig(cblas64)
+BuildRequires:  pkgconfig(cblas64_)
+%endif
+%endif
 ## lapack
+%if %{with_lapack}
 BuildRequires:  lapack
 BuildRequires:  lapack-devel
 BuildRequires:  lapack-static
@@ -304,17 +341,13 @@ BuildRequires:  openblas
 BuildRequires:  openblas-devel
 BuildRequires:	openblas-static
 BuildRequires:  openblas-srpm-macros
-BuildRequires:  pkgconfig(liblas)
 ### Blas + openmp
 %if %{with_omp}
 %if %{with_x64}
 BuildRequires:	openblas-openmp64
 BuildRequires:	openblas-openmp64_
-BuildRequires:  pkgconfig(cblas64)
-BuildRequires:  pkgconfig(cblas64_)
 %else
 BuildRequires:	openblas-openmp
-BuildRequires:  pkgconfig(cblas)
 %endif
 %else
 ### Blas + Pthreads
@@ -400,14 +433,31 @@ BuildRequires:  hipsparse-devel
 BuildRequires:	hipcc
 BuildRequires:	hipcc-libomp-devel
 BuildRequires:  rocm-comgr-devel
+BuildRequires:  miopen
+BuildRequires:  miopen-devel
 BuildRequires:  rocm-hip
 BuildRequires:  rocm-hip-devel
 BuildRequires:  rocblas-devel
+BuildRequires:  rocrand
+BuildRequires:  rocfft
+BuildRequires:  rocfft-devel
+BuildRequires:  rocprim-devel
+BuildRequires:  rocm-cmake
+BuildRequires:  rocm-comgr
+BuildRequires:  rocm-comgr-devel
+BuildRequires:  rocm-core
+BuildRequires:  rocm-core-devel
+BuildRequires:  rocrand-devel
 BuildRequires:  hipblas-devel
 BuildRequires:  hipcc-libomp-devel
+BuildRequires:  rocm-runtime
 BuildRequires:  rocm-runtime-devel
+BuildRequires:  roctracer
+BuildRequires:  roctracer-devel
+BuildRequires:  rocthrust-devel
 BuildRequires:  rocm-rpm-macros
 BuildRequires:  rocm-rpm-macros-modules
+BuildRequires:  rocm-compilersupport-macros
 %if %{with_gcn}
 BuildRequires:	libgomp-offload-amdgcn
 %endif
@@ -423,29 +473,31 @@ Requires:       hipblas
 # sub packages
 # -----------------------------------------------------------------------------
 
-%package ggml
-Summary:        %{summary} - ggml
+%package ggml-%{hw_ac}
+Summary:        %{summary} - ggml-%{hw_ac}
 
-%description ggml
+%description ggml-%{hw_ac}
 %{_description}
 
-%package devel
-Summary:        %{summary} - devel
-Requires:       %{name}-ggml%{?_isa} = %{version}-%{release}
+%package devel-%{hw_ac}
+Summary:        %{summary} - devel-%{hw_ac}
+Requires:       %{name}-ggml-%{hw_ac} = %{version}-%{release}
 
-%description devel
+%description devel-%{hw_ac}
 %{_description}
 
-%package test
-Summary:        %{summary} - test
+%if %{with_test}
+%package test-%{hw_ac}
+Summary:        %{summary} - test-%{hw_ac}
 
-%description test
+%description test-%{hw_ac}
 %{_description}
+%endif
 
-%package convert-hf-to-gguf
-Summary:        %{summary} - convert-hf-to-gguf
+%package convert-hf-to-gguf-%{hw_ac}
+Summary:        %{summary} - convert-hf-to-gguf-%{hw_ac}
 
-%description convert-hf-to-gguf
+%description convert-hf-to-gguf-%{hw_ac}
 %{_description}
 
 # TODO
@@ -502,23 +554,11 @@ find . -name '.gitignore' -exec rm -rf {} \;
 # Rocm
 # settings for Rocm release
 %if %{with_rocm}
-%ifarch x86_64
-%global summary LLM inference in C/C++. OpenMP parallelization, amdgcn offload, and Rocm.
-%define with_omp 1
-%define with_gcn 1
-%define with_hips 0
-%define with_nvptx 0
-%define with_openblas 0
-%define with_blis 0
-%define with_vlk 0
-# global
-#%%global build_hip ON
+%global build_hip ON
 %global toolchain rocm
 # hipcc does not support some clang flags
-#%%global build_cxxflags %%(echo %%{optflags} | sed -e 's/-fstack-protector-strong/-Xarch_host -fstack-protector-strong/' -e 's/-fcf-protection/-Xarch_host -fcf-protection/')
-%else
-%define with_rocm 0
-%endif
+%global build_cxxflags %(echo %{optflags} | sed -e 's/-fstack-protector-strong/-Xarch_host -fstack-protector-strong/' -e 's/-fcf-protection/-Xarch_host -fcf-protection/')
+%global toolchain gcc
 %endif
 
 # python guff-py setup
@@ -538,6 +578,10 @@ cd -
 cd %{_vpath_srcdir}/gguf-py
 %pyproject_wheel
 cd -
+%endif
+
+%if %{with_rocm}
+module load rocm/default
 %endif
 
 # https://github.com/ggerganov/llama.cpp/pull/10627
@@ -639,6 +683,11 @@ cd -
 %else
 %cmake_build --config Release
 %endif
+
+	
+%if %{with_rocm}
+module purge	
+%endif
 # -----------------------------------------------------------------------------
 # Install
 # -----------------------------------------------------------------------------
@@ -668,7 +717,7 @@ cd -
 %{_libdir}/libggml.so.%{version}
 %{_libdir}/libllama.so.%{version}
 
-%files devel
+%files devel-%{hw_ac}
 %{_libdir}/libllama.so
 %{_includedir}/llama.h
 %{_includedir}/llama-cpp.h
@@ -676,14 +725,14 @@ cd -
 %{_libdir}/cmake/llama/llama-version.cmake
 %{_prefix}/lib/pkgconfig/llama.pc
 
-%files ggml
+%files ggml-%{hw_ac}
 %{_includedir}/ggml.h
 %{_includedir}/ggml-*.h
 %{_libdir}/libggml-base.so
 %{_libdir}/libggml.so
 
 %if %{with_test}
-%files test
+%files test-%{hw_ac}
 %{_bindir}/test-*
 %endif
 
@@ -691,7 +740,7 @@ cd -
 #convert_hf_to_gguf_update.py
 #convert_llama_ggml_to_gguf.py
 #convert_lora_to_gguf.py
-%files convert-hf-to-gguf
+%files convert-hf-to-gguf-%{hw_ac}
 %{_bindir}/convert_hf_to_gguf.py
 
 # docs
