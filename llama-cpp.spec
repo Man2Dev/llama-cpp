@@ -165,7 +165,7 @@ Source0:        %{url}/archive/%{version}.tar.gz#/llama.cpp-%{version}.tar.gz
 # ctest will fail test-eval-callback: curl 
 # found in `examples/eval-callback/CMakeLists.txt`
 Patch0:		0001-fix-for-building-with-no-internet-connection.patch
-Requires:	%{name}-ggml-%{hw_ac} = %{version}-%{release}
+Requires:	%{name}-ggml%{hw_ac} = %{version}-%{release}
 
 # Build Required packages
 BuildRequires:  git-core
@@ -550,31 +550,31 @@ Requires:       hipblas
 # sub packages
 # -----------------------------------------------------------------------------
 
-%package ggml-%{hw_ac}
-Summary:        %{summary} - ggml-%{hw_ac}
+%package ggml%{hw_ac}
+Summary:        %{summary} - ggml%{hw_ac}
 
-%description ggml-%{hw_ac}
+%description ggml%{hw_ac}
 %{_description}
 
-%package devel-%{hw_ac}
-Summary:        %{summary} - devel-%{hw_ac}
-Requires:       %{name}-ggml-%{hw_ac} = %{version}-%{release}
+%package libllama%{hw_ac}
+Summary:        %{summary} - libllama%{hw_ac}
+Requires:       %{name}-ggml%{hw_ac} = %{version}-%{release}
 
-%description devel-%{hw_ac}
+%description libllama%{hw_ac}
 %{_description}
 
 %if %{with_test}
-%package test-%{hw_ac}
-Summary:        %{summary} - test-%{hw_ac}
+%package test%{hw_ac}
+Summary:        %{summary} - test%{hw_ac}
 
-%description test-%{hw_ac}
+%description test%{hw_ac}
 %{_description}
 %endif
 
-%package convert-hf-to-gguf-%{hw_ac}
-Summary:        %{summary} - convert-hf-to-gguf-%{hw_ac}
+%package convert-hf-to-gguf%{hw_ac}
+Summary:        %{summary} - convert-hf-to-gguf%{hw_ac}
 
-%description convert-hf-to-gguf-%{hw_ac}
+%description convert-hf-to-gguf%{hw_ac}
 %{_description}
 
 # TODO
@@ -814,23 +814,23 @@ module purge
 %{_libdir}/libggml-base.so.%{version}
 %{_libdir}/libggml.so.%{version}
 %{_libdir}/libllama.so.%{version}
-
-%files devel-%{hw_ac}
-%{_libdir}/libllama.so
 %{_includedir}/llama.h
 %{_includedir}/llama-cpp.h
 %{_libdir}/cmake/llama/llama-config.cmake
 %{_libdir}/cmake/llama/llama-version.cmake
 %{_prefix}/lib/pkgconfig/llama.pc
 
-%files ggml-%{hw_ac}
+%files libllama%{hw_ac}
+%{_libdir}/libllama.so
+
+%files ggml%{hw_ac}
 %{_includedir}/ggml.h
 %{_includedir}/ggml-*.h
 %{_libdir}/libggml-base.so
 %{_libdir}/libggml.so
 
 %if %{with_test}
-%files test-%{hw_ac}
+%files test%{hw_ac}
 %{_bindir}/test-*
 %endif
 
@@ -838,7 +838,7 @@ module purge
 #convert_hf_to_gguf_update.py
 #convert_llama_ggml_to_gguf.py
 #convert_lora_to_gguf.py
-%files convert-hf-to-gguf-%{hw_ac}
+%files convert-hf-to-gguf%{hw_ac}
 %{_bindir}/convert_hf_to_gguf.py
 
 # docs
