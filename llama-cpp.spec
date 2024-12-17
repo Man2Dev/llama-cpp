@@ -39,7 +39,7 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 %define with_test 1
 # use the HBM backaend [breaks build]
 %define with_hbm	%{?_without_hbm:	0} %{?!_without_hbm:	1}
-%define with_hbm 1
+%define with_hbm 0
 # with a parallelization backaend
 %define with_par	%{?_without_par:	0} %{?!_without_par:	1}
 %define with_par 1
