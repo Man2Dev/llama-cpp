@@ -156,7 +156,7 @@ Summary:	LLM inference in C/C++
 Name:		llama-cpp%{hw_ac}
 License:        MIT AND Apache-2.0 AND LicenseRef-Fedora-Public-Domain
 Epoch:		1
-Version:	b4342
+Version:	b4349
 ExclusiveArch:  x86_64 aarch64
 Release:        %autorelease
 URL:            https://github.com/ggerganov/llama.cpp
@@ -633,10 +633,10 @@ find . -name '*.md' -exec rm -rf {} \;
 # https://bugzilla.redhat.com/show_bug.cgi?id=2314042
 %if %{with_vlk}
 # Loop through all files matching *x86_64.json
-for file in /usr/share/vulkan/icd.d/*.%{_target_cpu}.json; do
+for file in %{buildroot}/usr/share/vulkan/icd.d/*.%{_target_cpu}.json; do
     new_file="${file/.%{_target_cpu}/}"
     
-    sudo cp -p "$file" "$new_file"
+    cp -p "$file" "$new_file"
 done
 %endif
 
