@@ -39,7 +39,7 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 %define with_test 1
 # use the HBM backaend [breaks build]
 %define with_hbm	%{?_without_hbm:	0} %{?!_without_hbm:	1}
-%define with_hbm 0
+%define with_hbm 1
 # with a parallelization backaend
 %define with_par	%{?_without_par:	0} %{?!_without_par:	1}
 %define with_par 1
@@ -57,16 +57,16 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 %define with_blas 1
 # use OpenBlas vendor
 %define with_openblas	%{?_without_openblas:	0} %{?!_without_openblas:	1}
-%define with_openblas 1
+%define with_openblas 0
 # use FlexiBlas vendor
 %define with_flexiblas	%{?_without_flexiblas:	0} %{?!_without_flexiblas:	1}
-%define with_flexiblas 0
+%define with_flexiblas 1
 # use Atlas vendor
 %define with_atlas	%{?_without_atlas:	0} %{?!_without_atlas:	1}
 %define with_atlas 0
 # use Blis vendor
 %define with_blis	%{?_without_blis:	0} %{?!_without_blis:	1}
-%define with_blis 0
+%define with_blis 1
 # use Vulkan backaend
 %define with_vlk	%{?_without_vlk:	0} %{?!_without_vlk:	1}
 %define with_vlk 0
@@ -78,7 +78,7 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 %define with_hips 0
 # use amdgcn offload
 %define with_gcn	%{?_without_gcn:	0} %{?!_without_gcn:	1}
-%define with_gcn 1
+%define with_gcn 0
 # enable {ADDRESS, THREAD, UNDEFINED} sanitizer (THREAD is broken)
 %define with_san	%{?_without_san:	0} %{?!_without_san:	1}
 %define with_san 0
@@ -613,6 +613,18 @@ find . -name '*.md' -exec rm -rf {} \;
 %endif
 # git cruft
 #find . -name '.gitignore' -exec rm -rf {} \;
+
+# Vulkan
+# (rhbz#2314042)
+# https://bugzilla.redhat.com/show_bug.cgi?id=2314042
+%if %{with_vlk}
+# Loop through all files matching *x86_64.json
+for file in /usr/share/vulkan/icd.d/*.%{_target_cpu}.json; do
+    new_file="${file/.%{_target_cpu}/}"
+    
+    sudo cp -p "$file" "$new_file"
+done
+%endif
 
 # Rocm
 # settings for Rocm release
