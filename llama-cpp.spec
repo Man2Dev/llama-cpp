@@ -155,7 +155,6 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 Summary:	LLM inference in C/C++
 Name:		llama-cpp%{hw_ac}
 License:        MIT AND Apache-2.0 AND LicenseRef-Fedora-Public-Domain
-Epoch:		1
 Version:	b4349
 ExclusiveArch:  x86_64 aarch64
 Release:        %autorelease
@@ -166,6 +165,7 @@ Source0:        %{url}/archive/%{version}.tar.gz#/llama.cpp-%{version}.tar.gz
 # found in `examples/eval-callback/CMakeLists.txt`
 Patch0:		0001-fix-for-building-with-no-internet-connection.patch
 Requires:	%{name}-ggml%{hw_ac} = %{version}-%{release}
+Requires:	%{name}-libllama%{hw_ac} = %{version}-%{release}
 
 # Build Required packages
 BuildRequires:  git-core
@@ -559,6 +559,7 @@ Summary:        %{summary} - ggml%{hw_ac}
 %package libllama%{hw_ac}
 Summary:        %{summary} - libllama%{hw_ac}
 Requires:       %{name}-ggml%{hw_ac} = %{version}-%{release}
+Requires:	%{name}-libllama%{hw_ac} = %{version}-%{release}
 
 %description libllama%{hw_ac}
 %{_description}
@@ -566,6 +567,8 @@ Requires:       %{name}-ggml%{hw_ac} = %{version}-%{release}
 %if %{with_test}
 %package test%{hw_ac}
 Summary:        %{summary} - test%{hw_ac}
+Requires:       %{name}-ggml%{hw_ac} = %{version}-%{release}
+Requires:	%{name}-libllama%{hw_ac} = %{version}-%{release}
 
 %description test%{hw_ac}
 %{_description}
@@ -814,14 +817,14 @@ module purge
 %{_libdir}/libggml-base.so.%{version}
 %{_libdir}/libggml.so.%{version}
 %{_libdir}/libllama.so.%{version}
+
+%files libllama%{hw_ac}
+%{_libdir}/libllama.so
 %{_includedir}/llama.h
 %{_includedir}/llama-cpp.h
 %{_libdir}/cmake/llama/llama-config.cmake
 %{_libdir}/cmake/llama/llama-version.cmake
 %{_prefix}/lib/pkgconfig/llama.pc
-
-%files libllama%{hw_ac}
-%{_libdir}/libllama.so
 
 %files ggml%{hw_ac}
 %{_includedir}/ggml.h
