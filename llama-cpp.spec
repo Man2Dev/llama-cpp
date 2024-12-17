@@ -55,18 +55,18 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 # use Blas backaend
 %define with_blas	%{?_without_blas:       0} %{?!_without_blas:   1}
 %define with_blas 1
-# use OpenBlas vendor
-%define with_openblas	%{?_without_openblas:	0} %{?!_without_openblas:	1}
-%define with_openblas 0
 # use FlexiBlas vendor
 %define with_flexiblas	%{?_without_flexiblas:	0} %{?!_without_flexiblas:	1}
 %define with_flexiblas 1
+# use OpenBlas vendor
+%define with_openblas	%{?_without_openblas:	0} %{?!_without_openblas:	1}
+%define with_openblas 0
 # use Atlas vendor
 %define with_atlas	%{?_without_atlas:	0} %{?!_without_atlas:	1}
 %define with_atlas 0
 # use Blis vendor
 %define with_blis	%{?_without_blis:	0} %{?!_without_blis:	1}
-%define with_blis 1
+%define with_blis 0
 # use Vulkan backaend
 %define with_vlk	%{?_without_vlk:	0} %{?!_without_vlk:	1}
 %define with_vlk 0
@@ -138,11 +138,25 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 %endif
 %endif
 
+# FlexiBlas
+%if %{with_flexiblas}
+%define with_omp 1
+%define with_blas 1
+%define with_openblas 1
+%define with_blis 1
+%define with_atlas 1
+%endif
+
+# [checks indicate that BLAS breaks on aarch64 build]
+%ifarch aarch64
+%define with_blas 0
+%endif
+
 Summary:	LLM inference in C/C++
 Name:		llama-cpp%{hw_ac}
 License:        MIT AND Apache-2.0 AND LicenseRef-Fedora-Public-Domain
 Epoch:		1
-Version:	b4338
+Version:	b4342
 ExclusiveArch:  x86_64 aarch64
 Release:        %autorelease
 URL:            https://github.com/ggerganov/llama.cpp
@@ -738,17 +752,18 @@ module load rocm/default
 %if %{with_blas}
         -DGGML_BLAS=ON \
 %endif
+%if %{with_flexiblas}
+        -DGGML_BLAS_VENDOR=FlexiBLAS \
+%else
 %if %{with_openblas}
         -DGGML_BLAS_VENDOR=OpenBLAS \
 %endif
 %if %{with_blis}
         -DGGML_BLAS_VENDOR=FLAME \
 %endif
-%if %{with_flexiblas}
-        -DGGML_BLAS_VENDOR=FlexiBLAS \
-%endif
 %if %{with_atlas}
         -DGGML_BLAS_VENDOR=ATLAS \
+%endif
 %endif
 %if %{with_rocm}
 	-DGGML_HIP=ON \
