@@ -25,84 +25,58 @@ The main goal of llama.cpp is to enable LLM inference with minimal setup and sta
 * Vulkan and SYCL backend support
 * CPU+GPU hybrid inference to partially accelerate models larger than the total VRAM capacity}
 
-# enableing doc
+# enableing doc [ON]
 %define with_doc	%{?_without_doc:	0} %{?!_without_doc:	1}
-%define with_doc 1
-# enableing ssl
-%define with_ssl	%{?_without_ssl:	0} %{?!_without_ssl:	1}
-%define with_ssl 0
-# with examples (clients)
+# enableing ssl [OFF]
+%define with_ssl	%{?_without_ssl:	1} %{?!_without_ssl:	0}
+# with examples (clients) [ON]
 %define with_exa	%{?_without_exa:	0} %{?!_without_exa:	1}
-%define with_exa 1
-# with tests
+# with tests [ON]
 %define with_test	%{?_without_test:	0} %{?!_without_test:	1}
-%define with_test 1
-# use the HBM backaend [breaks build]
-%define with_hbm	%{?_without_hbm:	0} %{?!_without_hbm:	1}
-%define with_hbm 0
-# with a parallelization backaend
+# use the HBM backaend (breaks build) [OFF]
+%define with_hbm	%{?_without_hbm:	1} %{?!_without_hbm:	0}
+# with a parallelization backaend [ON]
 %define with_par	%{?_without_par:	0} %{?!_without_par:	1}
-%define with_par 1
-# keep lapack at build
+# keep lapack at build [ON]
 %define with_lapack	%{?_without_lapack:	0} %{?!_without_lapack:	1}
-%define with_lapack 1
-# use 64 bit (OpenMP)/Pthreads parallelization (ON=OpenMP / OFF=Pthreads)
+# use 64 bit (OpenMP)/Pthreads parallelization (ON=OpenMP / OFF=Pthreads) [ON]
 %define with_omp	%{?_without_omp:	0} %{?!_without_omp:	1}
-%define with_omp 1
-# with nvptx parallelization backaend
+# with nvptx parallelization backaend [ON]
 %define with_nvptx	%{?_without_nvptx:	0} %{?!_without_nvptx:	1}
-%define with_nvptx 1
-# use Blas backaend
+# use Blas backaend [ON]
 %define with_blas	%{?_without_blas:       0} %{?!_without_blas:   1}
-%define with_blas 1
-# use FlexiBlas vendor
+# use FlexiBlas vendor [ON]
 %define with_flexiblas	%{?_without_flexiblas:	0} %{?!_without_flexiblas:	1}
-%define with_flexiblas 1
-# use OpenBlas vendor
-%define with_openblas	%{?_without_openblas:	0} %{?!_without_openblas:	1}
-%define with_openblas 0
-# use Atlas vendor
-%define with_atlas	%{?_without_atlas:	0} %{?!_without_atlas:	1}
-%define with_atlas 0
-# use Blis vendor
-%define with_blis	%{?_without_blis:	0} %{?!_without_blis:	1}
-%define with_blis 0
-# use Vulkan backaend
-%define with_vlk	%{?_without_vlk:	0} %{?!_without_vlk:	1}
-%define with_vlk 0
-# use Rocm backaend
-%define with_rocm	%{?_without_rocm:	0} %{?!_without_rocm:	1}
-%define with_rocm 0
-# Build with native/legacy CMake HIP support (ON=native / OFF=legacy)
-%define with_hips	%{?_without_hips:	0} %{?!_without_hips:	1}
-%define with_hips 0
-# use amdgcn offload
-%define with_gcn	%{?_without_gcn:	0} %{?!_without_gcn:	1}
-%define with_gcn 0
-# enable {ADDRESS, THREAD, UNDEFINED} sanitizer (THREAD is broken)
-%define with_san	%{?_without_san:	0} %{?!_without_san:	1}
-%define with_san 0
-# ADDRESS sanitizer
-%define with_san_add	%{?_without_san:	0} %{?!_without_san:	1}
-%define with_san_add 0
-# THREAD sanitizer
-%define with_san_thr	%{?_without_san:	0} %{?!_without_san:	1}
-%define with_san_thr 0
-# UNDEFINED sanitizer
-%define with_san_und	%{?_without_san:	0} %{?!_without_san:	1}
-%define with_san_und 0
-# with package python-guff-py
-%define with_guffpy	%{?_without_guffpy:	0} %{?!_without_guffpy:	1}
-%define with_guffpy 0
-# with package webui
-%define with_webui	%{?_without_webui:	0} %{?!_without_webui:	1}
-%define with_webui 0
-# only build llama-server package 
-%define with_lls	%{?_without_lls:	0} %{?!_without_lls:	1}
-%define with_lls 0
-# only build GGML_RPC package
+# use OpenBlas vendor [OFF]
+%define with_openblas	%{?_without_openblas:	1} %{?!_without_openblas:	0}
+# use Atlas vendor [OFF]
+%define with_atlas	%{?_without_atlas:	1} %{?!_without_atlas:	0}
+# use Blis vendor [OFF]
+%define with_blis	%{?_without_blis:	1} %{?!_without_blis:	0}
+# use Vulkan backaend [OFF]
+%define with_vlk	%{?_without_vlk:	1} %{?!_without_vlk:	0}
+# use Rocm backaend [OFF]
+%define with_rocm	%{?_without_rocm:	1} %{?!_without_rocm:	0}
+# Build with native/legacy CMake HIP support (ON=native / OFF=legacy) [OFF]
+%define with_hips	%{?_without_hips:	1} %{?!_without_hips:	0}
+# use amdgcn offload [OFF]
+%define with_gcn	%{?_without_gcn:	1} %{?!_without_gcn:	0}
+# enable {ADDRESS, THREAD, UNDEFINED} sanitizer (THREAD is broken) [OFF]
+%define with_san	%{?_without_san:	1} %{?!_without_san:	0}
+# ADDRESS sanitizer [0FF]
+%define with_san_add	%{?_without_san:	1} %{?!_without_san:	0}
+# THREAD sanitizer [OFF]
+%define with_san_thr	%{?_without_san:	1} %{?!_without_san:	0}
+# UNDEFINED sanitizer [OFF]
+%define with_san_und	%{?_without_san:	1} %{?!_without_san:	0}
+# with package python-guff-py [OFF]
+%define with_guffpy	%{?_without_guffpy:	1} %{?!_without_guffpy:	0}
+# with package webui [OFF]
+%define with_webui	%{?_without_webui:	1} %{?!_without_webui:	0}
+# only build llama-server package [OFF]
+%define with_lls	%{?_without_lls:	1} %{?!_without_lls:	0}
+# only build GGML_RPC package [ON]
 %define with_rpc	%{?_without_rpc:	0} %{?!_without_rpc:	1}
-%define with_rpc 1
 
 # THREAD sanitizer doens not work with OpenMP.
 # will use Pthreads:
@@ -191,6 +165,7 @@ BuildRequires:	valgrind-devel
 BuildRequires:	valgrind-tools-devel
 BuildRequires:	csmock-plugin-valgrind
 BuildRequires:  gcc-c++
+BuildRequires:  libgcc
 BuildRequires:	libstdc++
 BuildRequires:	libstdc++-devel
 BuildRequires:	libstdc++-static
@@ -256,13 +231,17 @@ BuildRequires:	numactl
 # .devops/tools.sh
 # ref: .github/workflows/server.yml
 # examples/server/tests/requirements.txt
+# llama.cpp/gguf-py/pyproject.toml
 %if %{with_guffpy}
 %global pypi_name gguf
-%global pypi_version 0.11.0
-Recommends:	python3
-BuildRequires:	python3-devel
-BuildRequires:	python3-huggingface-hub
-BuildRequires:	python3-pure-protobuf
+%global pypi_version 0.13.0
+Recommends:	python%{python3_pkgversion}
+BuildRequires:	python%{python3_pkgversion}-devel
+BuildRequires:	python%{python3_pkgversion}-setuptools
+BuildRequires:	python%{python3_pkgversion}-huggingface-hub
+BuildRequires:	python%{python3_pkgversion}-pure-protobuf
+BuildRequires:	python%{python3_pkgversion}-poetry-core
+BuildRequires:	python%{python3_pkgversion}-poetry-plugin-export
 BuildRequires:  python3dist(pip)
 BuildRequires:  python3dist(poetry)
 BuildRequires:  python3dist(pillow)
@@ -273,10 +252,19 @@ BuildRequires:  python3dist(requests)
 BuildRequires:  python3dist(aiohttp)
 BuildRequires:  python3dist(pytest)
 BuildRequires:  python3dist(numpy)
+# TODO update to numpy < 2
+BuildRequires:  python3dist(numpy-stl)
 BuildRequires:  python3dist(prometheus-client)
 BuildRequires:  python3dist(sentencepiece)
 BuildRequires:  python3dist(cffi)
 BuildRequires:  python3dist(protobuf)
+# TODO update to protobuf < 5
+BuildRequires:  python3dist(pyyaml)
+BuildRequires:  python3dist(tqdm)
+BuildRequires:  python3dist(sentencepiece)
+BuildRequires:  python3dist(pytest)
+BuildRequires:  python3dist(poetry-core)
+# TODO
 # https://pypi.org/project/openai/
 # https://pypi.org/project/transformers/
 %endif
@@ -407,6 +395,7 @@ BuildRequires:	blis-threads64
 Requires:	flexiblas
 BuildRequires:	flexiblas
 BuildRequires:	flexiblas-devel
+BuildRequires:	pkgconfig(flexiblas)
 %if %{with_x64}
 BuildRequires:	flexiblas-hook-profile64
 BuildRequires:	flexiblas-netlib64
@@ -509,7 +498,6 @@ BuildRequires:	hipsparse
 BuildRequires:  hipsparse-devel
 BuildRequires:	hipcc
 BuildRequires:	hipcc-libomp-devel
-BuildRequires:  rocm-comgr-devel
 BuildRequires:  miopen
 BuildRequires:  miopen-devel
 BuildRequires:  rocm-hip
@@ -520,6 +508,8 @@ BuildRequires:  rocfft
 BuildRequires:  rocfft-devel
 BuildRequires:  rocprim-devel
 BuildRequires:  rocm-cmake
+BuildRequires:  rocm-smi-devel
+BuildRequires:  rocminfo
 BuildRequires:  rocm-comgr
 BuildRequires:  rocm-comgr-devel
 BuildRequires:  rocm-core
@@ -582,7 +572,7 @@ Summary:        %{summary} - convert-hf-to-gguf%{hw_ac}
 
 # TODO
 %if %{with_guffpy}
-%package -n     python3-%{pypi_name}
+%package -n python3-%{pypi_name}
 Summary:        %{summary}
 %{?python_provide:%python_provide python3-%{pypi_name}}
 
@@ -615,6 +605,7 @@ export LLAMA_LOG_COLORS=1
 export LLAMA_LOG_PREFIX=1
 export LLAMA_LOG_TIMESTAMPS=1
 export LLAMA_LOG_VERBOSITY=10
+export LLAMA_SKIP_TESTS_SLOW_ON_EMULATOR=1
 
 # Blis
 %if %{with_blis}
@@ -685,11 +676,43 @@ module load rocm/default
 # -DBUILD_SHARED_LIBS:BOOL=OFF \
 # -DCMAKE_SKIP_RPATH:BOOL=ON \
 # -DLLAMA_ALL_WARNINGS_3RD_PARTY=ON \
+# https://github.com/ggerganov/llama.cpp/blob/master/docs/build.md#hip
+# TODO: -DGGML_HIP_UMA=ON
+%if %{with_rocm}
+export HIPCXX="$(hipconfig -l)/clang"
+export HIP_PATH="$(hipconfig -R)"
+# With compat llvm the system clang is wrong
+export CLANG_PATH=`hipconfig --hipclangpath`
+export TENSILE_ROCM_ASSEMBLER_PATH=${CLANG_PATH}/clang++
+export TENSILE_ROCM_OFFLOAD_BUNDLER_PATH=${CLANG_PATH}/clang-offload-bundler
+# Work around problem with koji's ld
+export HIPCC_LINK_FLAGS_APPEND=-fuse-ld=lld
+
+for gpu in %{rocm_gpu_list}
+do
+module load rocm/$gpu
 %cmake \
-	-DCMAKE_BUILD_TYPE:STRING="-DNDEBUG" \
-	-DCMAKE_C_FLAGS_RELEASE:STRING="-DNDEBUG" \
-	-DCMAKE_CXX_FLAGS_RELEASE:STRING="-DNDEBUG" \
-	-DCMAKE_Fortran_FLAGS_RELEASE:STRING="-DNDEBUG" \
+       	-DGGML_HIP=ON \
+	-DAMDGPU_TARGETS=${ROCM_GPUS} \
+%if %{with_hips}
+        -DCMAKE_HIP_COMPILER="$(hipconfig -l)/clang"
+%if %{with_lls}
+%cmake_build --config Release --target llama-server
+%else
+%cmake_build --config Release
+%endif
+module purge
+done
+%else
+        -DCMAKE_C_COMPILER=hipcc \
+        -DCMAKE_CXX_COMPILER=hipcc
+%endif
+%else
+%cmake \
+	-DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo \
+	-DCMAKE_C_FLAGS_RELEASE:STRING=RelWithDebInfo \
+	-DCMAKE_CXX_FLAGS_RELEASE:STRING=RelWithDebInfo \
+	-DCMAKE_Fortran_FLAGS_RELEASE:STRING=RelWithDebInfo \
 	-DLLAMA_CURL:BOOL=ON \
 	-DGGML_CPU_ALL_VARIANTS:BOOL=ON \
 	-DGGML_NATIVE:BOOL=OFF \
@@ -754,46 +777,44 @@ module load rocm/default
 %endif
 %if %{with_blas}
         -DGGML_BLAS=ON \
-%endif
 %if %{with_flexiblas}
-        -DGGML_BLAS_VENDOR=FlexiBLAS \
+        -DGGML_BLAS_VENDOR=FlexiBLAS
 %else
 %if %{with_openblas}
-        -DGGML_BLAS_VENDOR=OpenBLAS \
+        -DGGML_BLAS_VENDOR=OpenBLAS
 %endif
 %if %{with_blis}
-        -DGGML_BLAS_VENDOR=FLAME \
+        -DGGML_BLAS_VENDOR=FLAME
 %endif
 %if %{with_atlas}
-        -DGGML_BLAS_VENDOR=ATLAS \
+        -DGGML_BLAS_VENDOR=ATLAS
 %endif
 %endif
-%if %{with_rocm}
-	-DGGML_HIP=ON \
-%if %{with_hips}
-	-DCMAKE_HIP_COMPILER="$(hipconfig -l)/clang"
-%else
-	-DCMAKE_C_COMPILER=hipcc \
-	-DCMAKE_CXX_COMPILER=hipcc
 %endif
-%endif
-
 %if %{with_lls}
 %cmake_build --config Release --target llama-server
 %else
 %cmake_build --config Release
 %endif
-
-	
-%if %{with_rocm}
-module purge	
 %endif
 # -----------------------------------------------------------------------------
 # Install
 # -----------------------------------------------------------------------------
 %install
-%cmake_install --prefix %{_prefix}
+# python guff-py install
+%if %{with_guffpy}
+%pyproject_install
+%pyproject_save_files python3-%{pypi_name}
+%endif
 
+%if %{with_rocm}
+for gpu in %{rocm_gpu_list}
+do
+%cmake_install --prefix %{_prefix}
+done
+%else
+%cmake_install --prefix %{_prefix}
+%endif
 # -----------------------------------------------------------------------------
 # Verify
 # -----------------------------------------------------------------------------
@@ -843,6 +864,11 @@ module purge
 #convert_lora_to_gguf.py
 %files convert-hf-to-gguf%{hw_ac}
 %{_bindir}/convert_hf_to_gguf.py
+
+%if %{with_guffpy}
+%files -n python3-%{pypi_name} -f %{pyproject_files}
+%{_vpath_srcdir}/gguf-py/gguf-py
+%endif
 
 # docs
 
